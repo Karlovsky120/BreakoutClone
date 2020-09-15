@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #pragma warning(disable : 26812) // The enum type * is unscoped. Prefer 'enum class' over 'enum'.
 
 #include <cassert>

@@ -2,6 +2,7 @@
 #include "breakout.h"
 
 #include "commandPools.h"
+#include "level.h"
 
 #pragma warning(push, 0)
 #define GLM_FORCE_RADIANS
@@ -226,6 +227,8 @@ void Breakout::run() {
         createBuffer(m_device, STAGING_BUFFER_SIZE, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     m_transferCommandPool = createCommandPool(m_device, m_queueFamilyIndex);
+
+    Level level("level1.xml");
 
     std::vector<glm::vec3> squareVertices = {{0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}};
     std::vector<uint16_t>  squareIndices  = {0, 1, 2, 1, 3, 2};

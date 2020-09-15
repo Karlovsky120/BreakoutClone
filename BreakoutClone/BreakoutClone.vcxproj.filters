@@ -33,6 +33,9 @@
     <ClCompile Include="src\breakout.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\level.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\commandPools.h">
@@ -51,6 +54,9 @@
       <Filter>Shaders</Filter>
     </ClInclude>
     <ClInclude Include="src\breakout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\level.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
