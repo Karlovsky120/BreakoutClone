@@ -74,7 +74,7 @@ class Breakout {
     Buffer m_indexBuffer  = {};
 
     std::map<SDL_Keycode, KeyState> m_keyStates;
-    glm::ivec2                       m_mousePosition;
+    glm::ivec2                      m_mousePosition;
 
     Camera         m_camera         = {};
     RasterPushData m_rasterPushData = {};
@@ -99,7 +99,6 @@ class Breakout {
     const VkPipeline                 createRasterPipeline(const VkShaderModule& vertexShader, const VkShaderModule& fragmentShader) const;
     void                             recordRasterCommandBuffer(const uint32_t& frameIndex, const uint32_t& indexCount) const;
     void                             updateCameraAndPushData(const uint32_t& frameTime);
-    //void                             updateSurfaceDependantStructures();
 
     static VkBool32 VKAPI_CALL debugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
                                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* /*pUserData*/);

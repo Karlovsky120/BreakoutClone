@@ -19,14 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Breakout.cpp" />
+    <ClCompile Include="src\breakout.cpp" />
     <ClCompile Include="src\commandPools.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\resources.cpp" />
     <ClCompile Include="src\swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Breakout.h" />
+    <ClInclude Include="src\breakout.h" />
     <ClInclude Include="src\commandPools.h" />
     <ClInclude Include="src\common.h" />
     <ClInclude Include="src\resources.h" />
