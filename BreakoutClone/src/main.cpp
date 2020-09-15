@@ -4,7 +4,7 @@
 
 #include <stdexcept>
 
-// For some reasone, someone thought that line
+// For some reason, someone thought that line
 // #define main SDL_main
 // was a good idea
 #undef main
