@@ -1,0 +1,16 @@
+#!/bin/bash
+
+MSBuild="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+
+if ! exec "$MSBuild" BreakoutClone.sln -t:build -p:Configuration=Debug -p:Platform=x64 | grep -q "Build succeeded."
+then
+	echo "Debug build failed!"
+	exit 1
+elif ! exec "$MSBuild" BreakoutClone.sln -t:build -p:Configuration=Release -p:Platform=x64 | grep -q "Build succeeded."
+then
+	echo "Release build failed!"
+	exit 1
+fi
+
+echo "Release and debug build succeeded!"
+exit 0
