@@ -227,8 +227,11 @@ void Breakout::run() {
 
     m_transferCommandPool = createCommandPool(m_device, m_queueFamilyIndex);
 
+    std::vector<glm::vec3> squareVertices = {{0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}};
+    std::vector<uint16_t>  squareIndices  = {0, 1, 2, 1, 3, 2};
+
     // clang-format off
-    std::vector<glm::vec3> cubeVertices = {
+    /*std::vector<glm::vec3> cubeVertices = {
             {0.5, -0.5, -0.5},
             {0.5, -0.5, 0.5},
             {-0.5, -0.5, 0.5},
@@ -237,35 +240,35 @@ void Breakout::run() {
             {0.5, 0.5, 0.5},
             {-0.5, 0.5, 0.5},
             {-0.5, 0.5, -0.5}
-    };
+    };*/
     // clang-format on
 
     VkBufferUsageFlags bufferUsageFlags =
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR;
 
-    uint32_t vertexBufferSize = sizeof(glm::vec3) * static_cast<uint32_t>(cubeVertices.size());
+    uint32_t vertexBufferSize = sizeof(glm::vec3) * static_cast<uint32_t>(squareVertices.size());
     m_vertexBuffer = createBuffer(m_device, vertexBufferSize, bufferUsageFlags, m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                   VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
 
-    uploadToDeviceLocalBuffer(m_device, cubeVertices.data(), vertexBufferSize, stagingBuffer.buffer, stagingBuffer.memory, m_vertexBuffer.buffer,
+    uploadToDeviceLocalBuffer(m_device, squareVertices.data(), vertexBufferSize, stagingBuffer.buffer, stagingBuffer.memory, m_vertexBuffer.buffer,
                               m_transferCommandPool, queue);
 
     // clang-format off
-    std::vector<uint16_t> cubeIndices = {
+    /*std::vector<uint16_t> cubeIndices = {
             0, 1, 3, 3, 1, 2,
             1, 5, 2, 2, 5, 6,
             5, 4, 6, 6, 4, 7,
             4, 0, 7, 7, 0, 3,
             3, 2, 7, 7, 2, 6,
             4, 5, 0, 0, 5, 1
-    };
+    };*/
     // clang-format on
 
-    uint32_t indexBufferSize = sizeof(uint16_t) * static_cast<uint32_t>(cubeIndices.size());
+    uint32_t indexBufferSize = sizeof(uint16_t) * static_cast<uint32_t>(squareIndices.size());
     m_indexBuffer            = createBuffer(m_device, indexBufferSize, bufferUsageFlags, m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                  VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
 
-    uploadToDeviceLocalBuffer(m_device, cubeIndices.data(), indexBufferSize, stagingBuffer.buffer, stagingBuffer.memory, m_indexBuffer.buffer,
+    uploadToDeviceLocalBuffer(m_device, squareIndices.data(), indexBufferSize, stagingBuffer.buffer, stagingBuffer.memory, m_indexBuffer.buffer,
                               m_transferCommandPool, queue);
 
     vkDestroyBuffer(m_device, stagingBuffer.buffer, nullptr);
@@ -454,7 +457,7 @@ void Breakout::run() {
 
         updateCameraAndPushData(frameTime);
 
-        recordRasterCommandBuffer(imageIndex, static_cast<uint32_t>(cubeIndices.size()));
+        recordRasterCommandBuffer(imageIndex, static_cast<uint32_t>(squareIndices.size()));
 
         VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
@@ -712,7 +715,7 @@ const VkPipeline Breakout::createRasterPipeline(const VkShaderModule& vertexShad
 
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     rasterizationStateCreateInfo.lineWidth                              = 1.0f;
-    rasterizationStateCreateInfo.frontFace                              = VK_FRONT_FACE_CLOCKWISE;
+    rasterizationStateCreateInfo.frontFace                              = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizationStateCreateInfo.cullMode                               = VK_CULL_MODE_BACK_BIT;
     createInfo.pRasterizationState                                      = &rasterizationStateCreateInfo;
 
