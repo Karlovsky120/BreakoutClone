@@ -110,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -128,7 +128,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,7 +149,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -172,7 +172,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
