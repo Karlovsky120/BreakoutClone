@@ -66,6 +66,7 @@ class Breakout {
 #endif
 
     VkExtent2D                       m_surfaceExtent                  = {};
+    VkPhysicalDeviceProperties       m_physicalDeviceProperties       = {};
     VkPhysicalDeviceMemoryProperties m_physicalDeviceMemoryProperties = {};
 
     std::unique_ptr<Swapchain> m_swapchain;

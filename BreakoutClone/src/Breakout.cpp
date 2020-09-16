@@ -162,14 +162,9 @@ void Breakout::run() {
 
     m_physicalDevice = pickPhysicalDevice();
 
-    VkPhysicalDeviceRayTracingPropertiesKHR physicalDeviceRayTracingProperties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR};
-    VkPhysicalDeviceProperties2             physicalDeviceProperties2          = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-    physicalDeviceProperties2.pNext                                            = &physicalDeviceRayTracingProperties;
-    vkGetPhysicalDeviceProperties2(m_physicalDevice, &physicalDeviceProperties2);
+    vkGetPhysicalDeviceProperties(m_physicalDevice, &m_physicalDeviceProperties);
 
-    VkPhysicalDeviceProperties physicalDeviceProperties = physicalDeviceProperties2.properties;
-
-    printf("Selected GPU: %s\n", physicalDeviceProperties.deviceName);
+    printf("Selected GPU: %s\n", m_physicalDeviceProperties.deviceName);
 
     m_queueFamilyIndex = getGraphicsQueueFamilyIndex(m_physicalDevice);
 
@@ -998,7 +993,13 @@ void Breakout::recordRasterCommandBuffer(const uint32_t& frameIndex, const VkBuf
 
     vkCmdBindIndexBuffer(m_commandBuffers[frameIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdDrawIndexedIndirect(m_commandBuffers[frameIndex], drawCommandBuffer, 0, 2, sizeof(VkDrawIndexedIndirectCommand));
+    if (m_physicalDeviceProperties.limits.maxDrawIndirectCount >= 2) {
+        vkCmdDrawIndexedIndirect(m_commandBuffers[frameIndex], drawCommandBuffer, 0, 2, sizeof(VkDrawIndexedIndirectCommand));
+    } else {
+        vkCmdDrawIndexedIndirect(m_commandBuffers[frameIndex], drawCommandBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+        vkCmdDrawIndexedIndirect(m_commandBuffers[frameIndex], drawCommandBuffer, sizeof(VkDrawIndexedIndirectCommand), 1,
+                                 sizeof(VkDrawIndexedIndirectCommand));
+    }
 
     vkCmdEndRenderPass(m_commandBuffers[frameIndex]);
 
