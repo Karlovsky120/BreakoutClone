@@ -13,19 +13,15 @@
 #pragma warning(enable : 6011)
 #pragma warning(pop)
 
-#include <filesystem>
 #include <map>
 #include <stdexcept>
 
-Level::Level(const char* name) {
-    std::filesystem::path fullPath = std::filesystem::current_path();
-    fullPath += "\\resources\\levels\\";
-    fullPath += name;
-
+Level::Level(const char* fullPath) {
     tinyxml2::XMLDocument levelXml;
-    if (levelXml.LoadFile(fullPath.string().c_str())) {
+
+    if (levelXml.LoadFile(fullPath)) {
         char error[512];
-        sprintf_s(error, "Failed to open file at location %s", fullPath.string().c_str());
+        sprintf_s(error, "Failed to open file at location %s", fullPath);
         throw std::runtime_error(error);
     }
 
@@ -38,7 +34,7 @@ Level::Level(const char* name) {
     backgroundTexturePath = levelData->FindAttribute("BackgroundTexture")->Value();
 
     std::map<const char, uint32_t> idMap;
-    uint32_t                       idCounter = 0;
+    uint32_t                       idCounter = 1000;
 
     const tinyxml2::XMLElement* brickTypesNode = levelData->FirstChildElement("BrickTypes");
     for (const tinyxml2::XMLElement* brickTypeElement = brickTypesNode->FirstChildElement(); brickTypeElement != NULL;
@@ -68,22 +64,25 @@ Level::Level(const char* name) {
             brickTypeElement->FindAttribute("BreakScore")->QueryIntValue(&brick.breakScore);
         }
 
-        brickTypes.push_back(brick);
+        brickTypes[brick.id] = brick;
     }
 
     const char* layoutData = levelData->FirstChildElement("Bricks")->GetText();
 
     uint32_t i = 0;
     levelLayout.push_back(std::vector<uint32_t>());
+    levelState.push_back(std::vector<BrickState>());
 
     while (layoutData[i] != NULL) {
         if (layoutData[i] == '\n' && levelLayout[lastFilledRow].size() != 0) {
             levelLayout.push_back(std::vector<uint32_t>());
+            levelState.push_back(std::vector<BrickState>());
             ++lastFilledRow;
         } else {
             auto id = idMap.find(layoutData[i]);
             if (id != idMap.end()) {
                 levelLayout[lastFilledRow].push_back(id->second);
+                levelState[lastFilledRow].push_back({id->second, brickTypes[id->second].hitPoints});
             }
         }
         ++i;
@@ -91,6 +90,7 @@ Level::Level(const char* name) {
 
     if (levelLayout[lastFilledRow].size() == 0) {
         levelLayout.pop_back();
+        levelState.pop_back();
         --lastFilledRow;
     }
 }

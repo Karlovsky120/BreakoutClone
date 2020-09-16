@@ -97,8 +97,9 @@ class Breakout {
     const std::vector<VkFramebuffer> createFramebuffers() const;
     const VkShaderModule             loadShader(const char* pathToSource) const;
     const VkPipeline                 createRasterPipeline(const VkShaderModule& vertexShader, const VkShaderModule& fragmentShader) const;
-    void                             recordRasterCommandBuffer(const uint32_t& frameIndex, const uint32_t& indexCount) const;
-    void                             updateCameraAndPushData(const uint32_t& frameTime);
+    void recordRasterCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
+                                   const VkBuffer& drawCommandBuffer) const;
+    void updateCameraAndPushData(const uint32_t& frameTime);
 
     static VkBool32 VKAPI_CALL debugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
                                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* /*pUserData*/);

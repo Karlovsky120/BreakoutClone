@@ -35,6 +35,14 @@
     <ClInclude Include="src\shaders\sharedStructures.h" />
     <ClInclude Include="src\swapchain.h" />
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="src\shaders\fragmentShader.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="src\shaders\vertexShader.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{3E8140D1-F0DB-4574-B760-6FE7C7794298}</ProjectGuid>
@@ -124,6 +132,16 @@
     <PostBuildEvent>
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
+    <CustomBuild>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>Vulkan shadere compilation</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>src/shaders/spirv/%(Filename).spv</Outputs>
+      <BuildInParallel>true</BuildInParallel>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -143,6 +161,16 @@
     <PostBuildEvent>
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
+    <CustomBuild>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>Vulkan shadere compilation</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>src/shaders/spirv/%(Filename).spv</Outputs>
+      <BuildInParallel>true</BuildInParallel>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -167,6 +195,16 @@
     <PostBuildEvent>
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
+    <CustomBuild>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>Vulkan shadere compilation</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>src/shaders/spirv/%(Filename).spv</Outputs>
+      <BuildInParallel>true</BuildInParallel>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -191,6 +229,16 @@
     <PostBuildEvent>
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
+    <CustomBuild>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>Vulkan shadere compilation</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>src/shaders/spirv/%(Filename).spv</Outputs>
+      <BuildInParallel>true</BuildInParallel>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

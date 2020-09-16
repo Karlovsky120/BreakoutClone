@@ -15,6 +15,7 @@
 #include <array>
 #include <chrono>
 #include <cstdio>
+#include <filesystem>
 #include <stdexcept>
 
 #define API_DUMP 0
@@ -23,10 +24,10 @@
 
 #define PI 3.1415926535897932384f
 
-#define WIDTH  1280
-#define HEIGHT 720
-#define FOV    glm::radians(100.0f)
-#define NEAR   0.001f
+#define WINDOW_WIDTH  1280
+#define WINDOW_HEIGHT 720
+#define FOV           glm::radians(100.0f)
+#define NEAR          0.001f
 
 #define ACCELERATION_FACTOR 300.0f
 
@@ -35,9 +36,20 @@
 #define MAX_FRAMES_IN_FLIGHT    2
 #define FRAMERATE_UPDATE_PERIOD 500'000 // 0.5 seconds
 
-#define INDEX_RAYGEN      0
-#define INDEX_CLOSEST_HIT 1
-#define INDEX_MISS        2
+#define MAX_COLUMN_COUNT 50
+#define MAX_ROW_COUNT    40
+
+#define MAX_COLUMN_SPACING 5
+#define MAX_ROW_SPACING    5
+
+#define BALL_INDEX        0
+#define PAD_INDEX         1
+#define LEFT_WALL_INDEX   2
+#define RIGHT_WALL_INDEX  3
+#define BRICK_START_INDEX 4
+
+#define VERTEX_BUFFER_BIND_ID   0
+#define INSTANCE_BUFFER_BIND_ID 1
 
 Breakout::~Breakout() {
 
@@ -113,7 +125,7 @@ void Breakout::run() {
         throw std::runtime_error("Failed to initialize SDL!");
     }
 
-    m_window = SDL_CreateWindow("Breakout", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_VULKAN);
+    m_window = SDL_CreateWindow("Breakout", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_VULKAN);
     if (!m_window) {
         throw std::runtime_error("Failed to create SDL window!");
     }
@@ -167,11 +179,7 @@ void Breakout::run() {
     deviceQueueCreateInfo.queueFamilyIndex        = m_queueFamilyIndex;
     deviceQueueCreateInfo.pQueuePriorities        = &queuePriorities;
 
-    std::array<const char*, 4> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_RAY_TRACING_EXTENSION_NAME,
-        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, // Required for VK_KHR_ray_tracing
-        VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME          // Required for VK_KHR_ray_tracing
-    };
+    std::array<const char*, 1> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     VkDeviceCreateInfo deviceCreateInfo      = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     deviceCreateInfo.queueCreateInfoCount    = 1;
@@ -179,16 +187,13 @@ void Breakout::run() {
     deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
     deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    VkPhysicalDeviceRayTracingFeaturesKHR physicalDeviceRayTracingFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR};
-    physicalDeviceRayTracingFeatures.rayTracing                            = VK_TRUE;
-
     VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
     physicalDeviceVulkan12Features.scalarBlockLayout                = VK_TRUE;
     physicalDeviceVulkan12Features.bufferDeviceAddress              = VK_TRUE;
-    physicalDeviceVulkan12Features.pNext                            = &physicalDeviceRayTracingFeatures;
 
-    VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    physicalDeviceFeatures2.pNext                     = &physicalDeviceVulkan12Features;
+    VkPhysicalDeviceFeatures2 physicalDeviceFeatures2  = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    physicalDeviceFeatures2.features.multiDrawIndirect = VK_TRUE;
+    physicalDeviceFeatures2.pNext                      = &physicalDeviceVulkan12Features;
 
     deviceCreateInfo.pNext = &physicalDeviceFeatures2;
 
@@ -228,51 +233,153 @@ void Breakout::run() {
 
     m_transferCommandPool = createCommandPool(m_device, m_queueFamilyIndex);
 
-    Level level("level1.xml");
-
-    std::vector<glm::vec3> squareVertices = {{0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}};
+    std::vector<glm::vec2> squareVertices = {{-0.5, -0.5}, {-0.5, 0.5}, {0.5, -0.5}, {0.5, 0.5}};
     std::vector<uint16_t>  squareIndices  = {0, 1, 2, 1, 3, 2};
 
-    // clang-format off
-    /*std::vector<glm::vec3> cubeVertices = {
-            {0.5, -0.5, -0.5},
-            {0.5, -0.5, 0.5},
-            {-0.5, -0.5, 0.5},
-            {-0.5, -0.5, -0.5},
-            {0.5, 0.5, -0.5},
-            {0.5, 0.5, 0.5},
-            {-0.5, 0.5, 0.5},
-            {-0.5, 0.5, -0.5}
-    };*/
-    // clang-format on
+    std::vector<glm::vec2> circleVertices;
+    std::vector<uint16_t>  circleIndices;
 
-    VkBufferUsageFlags bufferUsageFlags =
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR;
+    glm::vec2 currentVertex     = {0.5, 0.0};
+    uint32_t  circleVertexCount = 36;
+    float     step              = -2.0f * PI / circleVertexCount;
+    uint16_t  currentIndex      = 1;
 
-    uint32_t vertexBufferSize = sizeof(glm::vec3) * static_cast<uint32_t>(squareVertices.size());
-    m_vertexBuffer = createBuffer(m_device, vertexBufferSize, bufferUsageFlags, m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                  VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
+    circleVertices.push_back(currentVertex);
+    for (uint32_t i = 0; i < circleVertexCount; ++i) {
+        currentVertex = glm::rotate(currentVertex, step);
+        circleVertices.push_back(currentVertex);
 
-    uploadToDeviceLocalBuffer(m_device, squareVertices.data(), vertexBufferSize, stagingBuffer.buffer, stagingBuffer.memory, m_vertexBuffer.buffer,
+        circleIndices.push_back(0);
+        circleIndices.push_back(currentIndex);
+        ++currentIndex;
+        circleIndices.push_back(currentIndex);
+    }
+
+    circleIndices.pop_back();
+    circleIndices.push_back(1);
+
+    uint32_t vertexBufferSize = sizeof(glm::vec2) * (static_cast<uint32_t>(squareVertices.size() + circleVertices.size()));
+    Buffer   vertexBuffer     = createBuffer(m_device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                       m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    uint32_t squareVertexOffset       = 0;
+    uint32_t squareVertexBufferOffset = 0;
+    uploadToDeviceLocalBuffer(m_device, squareVertices.data(), static_cast<uint32_t>(squareVertices.size()) * sizeof(glm::vec2), stagingBuffer.buffer,
+                              stagingBuffer.memory, vertexBuffer.buffer, m_transferCommandPool, queue, squareVertexBufferOffset);
+
+    uint32_t circleVertexOffset       = squareVertexOffset + static_cast<uint32_t>(squareVertices.size());
+    uint32_t circleVertexBufferOffset = squareVertexOffset + static_cast<uint32_t>(squareVertices.size()) * sizeof(glm::vec2);
+    uploadToDeviceLocalBuffer(m_device, circleVertices.data(), static_cast<uint32_t>(circleVertices.size()) * sizeof(glm::vec2), stagingBuffer.buffer,
+                              stagingBuffer.memory, vertexBuffer.buffer, m_transferCommandPool, queue, circleVertexBufferOffset);
+
+    uint32_t indexBufferSize = sizeof(uint16_t) * (static_cast<uint32_t>(squareIndices.size() + circleIndices.size()));
+    Buffer   indexBuffer     = createBuffer(m_device, indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                      m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    uint32_t squareIndexOffset       = 0;
+    uint32_t squareIndexBufferOffset = 0;
+    uploadToDeviceLocalBuffer(m_device, squareIndices.data(), static_cast<uint32_t>(squareIndices.size()) * sizeof(uint16_t), stagingBuffer.buffer,
+                              stagingBuffer.memory, indexBuffer.buffer, m_transferCommandPool, queue, squareIndexBufferOffset);
+
+    uint32_t circleIndexOffset       = squareIndexOffset + static_cast<uint32_t>(squareIndices.size());
+    uint32_t circleIndexBufferOffset = squareIndexOffset + static_cast<uint32_t>(squareIndices.size()) * sizeof(uint16_t);
+    uploadToDeviceLocalBuffer(m_device, circleIndices.data(), static_cast<uint32_t>(circleIndices.size()) * sizeof(uint16_t), stagingBuffer.buffer,
+                              stagingBuffer.memory, indexBuffer.buffer, m_transferCommandPool, queue, circleIndexBufferOffset);
+
+    std::vector<Level> levels;
+
+    std::filesystem::path fullPath = std::filesystem::current_path();
+    fullPath += "\\resources\\levels\\";
+    for (const auto& file : std::filesystem::directory_iterator(fullPath)) {
+        levels.push_back(Level(file.path().string().c_str()));
+    }
+
+    Level& level = levels[0];
+
+    std::array<VkDrawIndexedIndirectCommand, 2> drawIndirectCommands;
+    // Ball
+    drawIndirectCommands[0].indexCount    = static_cast<uint32_t>(circleIndices.size());
+    drawIndirectCommands[0].instanceCount = 1;
+    drawIndirectCommands[0].firstIndex    = circleIndexOffset;
+    drawIndirectCommands[0].vertexOffset  = circleVertexOffset;
+    drawIndirectCommands[0].firstInstance = 0;
+
+    // Pad, walls and bricks
+    drawIndirectCommands[1].indexCount    = static_cast<uint32_t>(squareIndices.size());
+    drawIndirectCommands[1].instanceCount = 1 + 2 + level.columnCount * level.rowCount;
+    drawIndirectCommands[1].firstIndex    = squareIndexOffset;
+    drawIndirectCommands[1].vertexOffset  = squareVertexOffset;
+    drawIndirectCommands[1].firstInstance = 1;
+
+    uint32_t drawCommandsSize = sizeof(VkDrawIndexedIndirectCommand) * static_cast<uint32_t>(drawIndirectCommands.size());
+
+    Buffer drawCommandBuffer = createBuffer(m_device, drawCommandsSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                            m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    uploadToDeviceLocalBuffer(m_device, drawIndirectCommands.data(), drawCommandsSize, stagingBuffer.buffer, stagingBuffer.memory, drawCommandBuffer.buffer,
                               m_transferCommandPool, queue);
 
-    // clang-format off
-    /*std::vector<uint16_t> cubeIndices = {
-            0, 1, 3, 3, 1, 2,
-            1, 5, 2, 2, 5, 6,
-            5, 4, 6, 6, 4, 7,
-            4, 0, 7, 7, 0, 3,
-            3, 2, 7, 7, 2, 6,
-            4, 5, 0, 0, 5, 1
-    };*/
-    // clang-format on
+    float brickWidth = (WINDOW_WIDTH - MAX_COLUMN_COUNT * (MAX_COLUMN_SPACING + 1)) / static_cast<float>(MAX_COLUMN_COUNT);
 
-    uint32_t indexBufferSize = sizeof(uint16_t) * static_cast<uint32_t>(squareIndices.size());
-    m_indexBuffer            = createBuffer(m_device, indexBufferSize, bufferUsageFlags, m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                 VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
+    float padBottomPadding = MAX_ROW_SPACING * 8; // 5 rows of brick height space
+    float brickHeight      = (WINDOW_HEIGHT - (MAX_ROW_COUNT * (MAX_ROW_SPACING + 1)) - padBottomPadding) / static_cast<float>(MAX_ROW_COUNT);
 
-    uploadToDeviceLocalBuffer(m_device, squareIndices.data(), indexBufferSize, stagingBuffer.buffer, stagingBuffer.memory, m_indexBuffer.buffer,
-                              m_transferCommandPool, queue);
+    float playAreaWidth = level.columnCount * brickWidth + (level.columnCount + 1) * level.columnSpacing;
+    float wallWidth     = (WINDOW_WIDTH - playAreaWidth) * 0.5f;
+
+    float padWidth = playAreaWidth * 0.2f;
+
+#pragma warning(suppress : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value
+    std::vector<InstanceData> instanceDatas(4 + level.columnCount * level.rowCount);
+
+    // The ball
+    instanceDatas[BALL_INDEX].position.x   = wallWidth + playAreaWidth * 0.5f;
+    instanceDatas[BALL_INDEX].position.y   = WINDOW_HEIGHT - MAX_ROW_SPACING * 3 - brickWidth * 0.5f;
+    instanceDatas[BALL_INDEX].position.z   = 0.0f;
+    instanceDatas[BALL_INDEX].scale        = {brickWidth, brickWidth};
+    instanceDatas[BALL_INDEX].textureIndex = 1;
+
+    // The pad
+    instanceDatas[PAD_INDEX].position.x   = wallWidth + playAreaWidth * 0.5f;
+    instanceDatas[PAD_INDEX].position.y   = WINDOW_HEIGHT - MAX_ROW_SPACING * 2;
+    instanceDatas[PAD_INDEX].position.z   = 0.0f;
+    instanceDatas[PAD_INDEX].scale        = {padWidth, brickHeight};
+    instanceDatas[PAD_INDEX].textureIndex = 0;
+
+    // Left wall
+    instanceDatas[LEFT_WALL_INDEX].position.x   = 0;
+    instanceDatas[LEFT_WALL_INDEX].position.y   = WINDOW_HEIGHT * 0.5f;
+    instanceDatas[LEFT_WALL_INDEX].position.z   = 0.0f;
+    instanceDatas[LEFT_WALL_INDEX].scale        = {wallWidth * 2.0f, WINDOW_HEIGHT};
+    instanceDatas[LEFT_WALL_INDEX].textureIndex = 1;
+
+    // Right wall
+    instanceDatas[RIGHT_WALL_INDEX].position.x   = WINDOW_WIDTH;
+    instanceDatas[RIGHT_WALL_INDEX].position.y   = WINDOW_HEIGHT * 0.5f;
+    instanceDatas[RIGHT_WALL_INDEX].position.z   = 0.0f;
+    instanceDatas[RIGHT_WALL_INDEX].scale        = {wallWidth * 2.0f, WINDOW_HEIGHT};
+    instanceDatas[RIGHT_WALL_INDEX].textureIndex = 1;
+
+    // Bricks
+    uint32_t instanceDataIndex = BRICK_START_INDEX;
+    float    offsetY           = level.rowSpacing + 0.5f * brickHeight;
+    float    stepY             = level.rowSpacing + brickHeight;
+    for (size_t i = 0; i < level.levelState.size(); ++i, offsetY += stepY) {
+        std::vector<BrickState>& brickRow = level.levelState[i];
+        float                    offsetX  = wallWidth + level.columnSpacing + 0.5f * brickWidth;
+        float                    stepX    = level.columnSpacing + brickWidth;
+        for (size_t j = 0; j < brickRow.size(); ++j, offsetX += stepX) {
+            instanceDatas[instanceDataIndex].position     = {offsetX, offsetY, 0.0f};
+            instanceDatas[instanceDataIndex].scale        = {brickWidth, brickHeight};
+            instanceDatas[instanceDataIndex].textureIndex = 2;
+            ++instanceDataIndex;
+        }
+    }
+
+    uint32_t instanceDataBufferSize = sizeof(InstanceData) * static_cast<uint32_t>(instanceDatas.size());
+    Buffer   instanceDataBuffer     = createBuffer(m_device, instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                             m_physicalDeviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    uploadToHostVisibleBuffer(m_device, instanceDatas.data(), instanceDataBufferSize, instanceDataBuffer.memory);
 
     vkDestroyBuffer(m_device, stagingBuffer.buffer, nullptr);
     vkFreeMemory(m_device, stagingBuffer.memory, nullptr);
@@ -281,24 +388,30 @@ void Breakout::run() {
     pipelineCacheCreateInfo.initialDataSize           = 0;
     VK_CHECK(vkCreatePipelineCache(m_device, &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
 
-    std::array<VkDescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings;
+    /*std::array<VkDescriptorSetLayoutBinding, 3> descriptorSetLayoutBindings;
     descriptorSetLayoutBindings.fill({});
 
-    // Vertex buffer
+    // Vertex and index buffer
     descriptorSetLayoutBindings[0].binding         = 0;
     descriptorSetLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     descriptorSetLayoutBindings[0].descriptorCount = 1;
-    descriptorSetLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    descriptorSetLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
 
-    // Index buffer
+    // Vertex and index buffer, again
     descriptorSetLayoutBindings[1].binding         = 1;
     descriptorSetLayoutBindings[1].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     descriptorSetLayoutBindings[1].descriptorCount = 1;
-    descriptorSetLayoutBindings[1].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    descriptorSetLayoutBindings[1].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
+
+    // Instance buffer
+    descriptorSetLayoutBindings[2].binding         = 2;
+    descriptorSetLayoutBindings[2].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descriptorSetLayoutBindings[2].descriptorCount = 1;
+    descriptorSetLayoutBindings[2].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;*/
 
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    descriptorSetLayoutCreateInfo.bindingCount                    = static_cast<uint32_t>(descriptorSetLayoutBindings.size());
-    descriptorSetLayoutCreateInfo.pBindings                       = descriptorSetLayoutBindings.data();
+    descriptorSetLayoutCreateInfo.bindingCount                    = 0;       // static_cast<uint32_t>(descriptorSetLayoutBindings.size());
+    descriptorSetLayoutCreateInfo.pBindings                       = nullptr; // descriptorSetLayoutBindings.data();
     VK_CHECK(vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr, &m_descriptorSetLayout));
 
     VkPushConstantRange rasterPushConstantRange = {};
@@ -321,7 +434,7 @@ void Breakout::run() {
     vkDestroyShaderModule(m_device, fragmentShader, nullptr);
     vkDestroyShaderModule(m_device, vertexShader, nullptr);
 
-    // clang-format off
+    /*// clang-format off
     std::array<VkDescriptorPoolSize, 1> descriptorPoolSizes = {{
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2}
     }};
@@ -344,19 +457,23 @@ void Breakout::run() {
     m_descriptorSets = std::vector<VkDescriptorSet>(m_swapchainImageCount);
     vkAllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, m_descriptorSets.data());
 
-    std::array<VkDescriptorBufferInfo, 2> descriptorBufferInfos;
-    descriptorBufferInfos[0].buffer = m_vertexBuffer.buffer;
+    std::array<VkDescriptorBufferInfo, 3> descriptorBufferInfos;
+    descriptorBufferInfos[0].buffer = vertexBuffer.buffer;
     descriptorBufferInfos[0].offset = 0;
     descriptorBufferInfos[0].range  = vertexBufferSize;
 
-    descriptorBufferInfos[1].buffer = m_indexBuffer.buffer;
+    descriptorBufferInfos[1].buffer = indexBuffer.buffer;
     descriptorBufferInfos[1].offset = 0;
     descriptorBufferInfos[1].range  = indexBufferSize;
+
+    descriptorBufferInfos[2].buffer = instanceDataBuffer.buffer;
+    descriptorBufferInfos[2].offset = 0;
+    descriptorBufferInfos[2].range  = instanceDataBufferSize;
 
     std::array<VkWriteDescriptorSet, 1> writeDescriptorSets;
     writeDescriptorSets.fill({VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET});
 
-    writeDescriptorSets[0].dstBinding      = 0; // 0 for vertex and 1 for index buffer
+    writeDescriptorSets[0].dstBinding      = 0; // 0 for vertex, 1 for index buffer and 2 for instance buffer
     writeDescriptorSets[0].dstArrayElement = 0;
     writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     writeDescriptorSets[0].descriptorCount = static_cast<uint32_t>(descriptorBufferInfos.size());
@@ -366,7 +483,7 @@ void Breakout::run() {
         writeDescriptorSets[0].dstSet = m_descriptorSets[i];
 
         vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-    }
+    }*/
 
     VkCommandPoolCreateInfo commandPoolCreateInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     commandPoolCreateInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -411,6 +528,9 @@ void Breakout::run() {
 
     std::chrono::high_resolution_clock::time_point oldTime = std::chrono::high_resolution_clock::now();
     uint32_t                                       time    = 0;
+
+    glm::vec2 ballVelocity(0.0f);
+    bool      ballAttached = true;
 
     SDL_Event sdlEvent;
     bool      quit = false;
@@ -458,9 +578,47 @@ void Breakout::run() {
             updatedUI = false;
         }
 
+        if (m_keyStates[SDLK_a].pressed) {
+            instanceDatas[PAD_INDEX].position.x -= 0.0002f * frameTime;
+
+            if (instanceDatas[PAD_INDEX].position.x < wallWidth + padWidth * 0.5f) {
+                instanceDatas[PAD_INDEX].position.x = wallWidth + padWidth * 0.5f;
+            }
+
+            if (ballAttached) {
+                instanceDatas[BALL_INDEX].position.x = instanceDatas[PAD_INDEX].position.x;
+            }
+        }
+
+        if (m_keyStates[SDLK_d].pressed) {
+            instanceDatas[PAD_INDEX].position.x += 0.0002f * frameTime;
+
+            if (instanceDatas[PAD_INDEX].position.x > WINDOW_WIDTH - (wallWidth + padWidth * 0.5f)) {
+                instanceDatas[PAD_INDEX].position.x = WINDOW_WIDTH - (wallWidth + padWidth * 0.5f);
+            }
+
+            if (ballAttached) {
+                instanceDatas[BALL_INDEX].position.x = instanceDatas[PAD_INDEX].position.x;
+            }
+        }
+
+        if (m_keyStates[SDLK_SPACE].pressed) {
+            m_keyStates[SDLK_SPACE].pressed = false;
+            ballAttached                    = false;
+            ballVelocity                    = {0.0f, -1.0f};
+        }
+
+        if (!ballAttached) {
+            float velocityFactor = frameTime * 0.0002f;
+
+            instanceDatas[BALL_INDEX].position += glm::vec3(ballVelocity * velocityFactor, 0.0f);
+        }
+
+        uploadToHostVisibleBuffer(m_device, instanceDatas.data(), instanceDataBufferSize, instanceDataBuffer.memory);
+
         updateCameraAndPushData(frameTime);
 
-        recordRasterCommandBuffer(imageIndex, static_cast<uint32_t>(squareIndices.size()));
+        recordRasterCommandBuffer(imageIndex, vertexBuffer.buffer, indexBuffer.buffer, instanceDataBuffer.buffer, drawCommandBuffer.buffer);
 
         VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
@@ -704,7 +862,45 @@ const VkPipeline Breakout::createRasterPipeline(const VkShaderModule& vertexShad
     createInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     createInfo.pStages    = shaderStages.data();
 
+    std::array<VkVertexInputBindingDescription, 2> vertexInputBindingDescriptions;
+    vertexInputBindingDescriptions[0].binding   = VERTEX_BUFFER_BIND_ID;
+    vertexInputBindingDescriptions[0].stride    = sizeof(glm::vec2);
+    vertexInputBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    vertexInputBindingDescriptions[1].binding   = INSTANCE_BUFFER_BIND_ID;
+    vertexInputBindingDescriptions[1].stride    = sizeof(InstanceData);
+    vertexInputBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+
+    std::array<VkVertexInputAttributeDescription, 4> vertexInputAttributeDescriptions;
+    // Vertex position
+    vertexInputAttributeDescriptions[0].binding  = VERTEX_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[0].location = 0;
+    vertexInputAttributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttributeDescriptions[0].offset   = 0;
+
+    // Instance position
+    vertexInputAttributeDescriptions[1].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[1].location = 1;
+    vertexInputAttributeDescriptions[1].format   = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttributeDescriptions[1].offset   = 0;
+
+    // Instance scale
+    vertexInputAttributeDescriptions[2].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[2].location = 2;
+    vertexInputAttributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeDescriptions[2].offset   = offsetof(InstanceData, scale);
+
+    // Instance texture index
+    vertexInputAttributeDescriptions[3].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[3].location = 3;
+    vertexInputAttributeDescriptions[3].format   = VK_FORMAT_R32_UINT;
+    vertexInputAttributeDescriptions[3].offset   = offsetof(InstanceData, textureIndex);
+
     VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+    vertexInputStateCreateInfo.pVertexBindingDescriptions           = vertexInputBindingDescriptions.data();
+    vertexInputStateCreateInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindingDescriptions.size());
+    vertexInputStateCreateInfo.pVertexAttributeDescriptions         = vertexInputAttributeDescriptions.data();
+    vertexInputStateCreateInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributeDescriptions.size());
     createInfo.pVertexInputState                                    = &vertexInputStateCreateInfo;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
@@ -719,7 +915,7 @@ const VkPipeline Breakout::createRasterPipeline(const VkShaderModule& vertexShad
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     rasterizationStateCreateInfo.lineWidth                              = 1.0f;
     rasterizationStateCreateInfo.frontFace                              = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizationStateCreateInfo.cullMode                               = VK_CULL_MODE_BACK_BIT;
+    rasterizationStateCreateInfo.cullMode                               = VK_CULL_MODE_NONE; // VK_CULL_MODE_BACK_BIT;
     createInfo.pRasterizationState                                      = &rasterizationStateCreateInfo;
 
     VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
@@ -756,7 +952,8 @@ const VkPipeline Breakout::createRasterPipeline(const VkShaderModule& vertexShad
     return pipeline;
 }
 
-void Breakout::recordRasterCommandBuffer(const uint32_t& frameIndex, const uint32_t& indexCount) const {
+void Breakout::recordRasterCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
+                                         const VkBuffer& drawCommandBuffer) const {
     VkCommandBufferBeginInfo commandBufferBeginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 
     VkViewport viewport = {};
@@ -792,10 +989,16 @@ void Breakout::recordRasterCommandBuffer(const uint32_t& frameIndex, const uint3
     vkCmdPushConstants(m_commandBuffers[frameIndex], m_rasterPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(RasterPushData), &m_rasterPushData);
 
     vkCmdBindPipeline(m_commandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipeline);
-    vkCmdBindDescriptorSets(m_commandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipelineLayout, 0, 1, &m_descriptorSets[frameIndex], 0,
-                            nullptr);
+    // vkCmdBindDescriptorSets(m_commandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_rasterPipelineLayout, 0, 1, &m_descriptorSets[frameIndex], 0,
+    // nullptr);
 
-    vkCmdDraw(m_commandBuffers[frameIndex], indexCount, 1, 0, 0);
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(m_commandBuffers[frameIndex], VERTEX_BUFFER_BIND_ID, 1, &vertexBuffer, &offset);
+    vkCmdBindVertexBuffers(m_commandBuffers[frameIndex], INSTANCE_BUFFER_BIND_ID, 1, &instanceBuffer, &offset);
+
+    vkCmdBindIndexBuffer(m_commandBuffers[frameIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vkCmdDrawIndexedIndirect(m_commandBuffers[frameIndex], drawCommandBuffer, 0, 2, sizeof(VkDrawIndexedIndirectCommand));
 
     vkCmdEndRenderPass(m_commandBuffers[frameIndex]);
 

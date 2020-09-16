@@ -9,6 +9,9 @@
 #pragma warning(pop)
 
 #define mat4 glm::mat4
+#define vec3 glm::vec3
+#define vec2 glm::vec2
+#define uint uint32_t
 #endif
 
 struct RasterPushData {
@@ -20,12 +23,15 @@ struct RasterPushData {
     float near;
 };
 
-struct RayTracingPushData {
-    mat4 cameraTransformationInverse;
-
-    float oneOverTanOfHalfFov;
+struct InstanceData {
+    vec3 position;
+    vec2 scale;
+    uint textureIndex;
 };
 
 #ifdef CPP_SHADER_STRUCTURE
+#undef uint
+#undef vec2
+#undef vec3
 #undef mat4
 #endif

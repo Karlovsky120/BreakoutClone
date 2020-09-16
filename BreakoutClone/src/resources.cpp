@@ -117,7 +117,7 @@ Buffer createBuffer(const VkDevice device, const VkDeviceSize bufferSize, const 
 
     if (memoryPropertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT && memoryAllocateFlags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT) {
         VkBufferDeviceAddressInfo deviceAddressInfo = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
-        deviceAddressInfo.buffer = buffer.buffer;
+        deviceAddressInfo.buffer                    = buffer.buffer;
 
         buffer.deviceAddress = vkGetBufferDeviceAddress(device, &deviceAddressInfo);
     }
@@ -167,9 +167,16 @@ VkDeviceMemory allocateVulkanObjectMemory(const VkDevice device, const VkMemoryR
     return memory;
 }
 
+void uploadToHostVisibleBuffer(const VkDevice device, const void* data, const uint32_t bufferSize, const VkDeviceMemory bufferMemory) {
+    void* hostBufferPointer;
+    VK_CHECK(vkMapMemory(device, bufferMemory, 0, bufferSize, 0, &hostBufferPointer));
+    memcpy(hostBufferPointer, reinterpret_cast<const uint8_t*>(data), bufferSize);
+    vkUnmapMemory(device, bufferMemory);
+}
+
 void uploadToDeviceLocalBuffer(const VkDevice device, const void* data, const uint32_t bufferSize, const VkBuffer stagingBuffer,
                                const VkDeviceMemory stagingBufferMemory, const VkBuffer deviceBuffer, const VkCommandPool transferCommandPool,
-                               const VkQueue queue) {
+                               const VkQueue queue, const uint32_t dstOffset) {
 
     void* stagingBufferPointer;
     VK_CHECK(vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &stagingBufferPointer));
@@ -189,7 +196,7 @@ void uploadToDeviceLocalBuffer(const VkDevice device, const void* data, const ui
 
     VkBufferCopy bufferCopy = {};
     bufferCopy.srcOffset    = 0;
-    bufferCopy.dstOffset    = 0;
+    bufferCopy.dstOffset    = dstOffset;
     bufferCopy.size         = bufferSize;
     vkCmdCopyBuffer(transferCommandBuffer, stagingBuffer, deviceBuffer, 1, &bufferCopy);
     VK_CHECK(vkEndCommandBuffer(transferCommandBuffer));

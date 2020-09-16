@@ -27,6 +27,7 @@ uint32_t             findMemoryType(const VkPhysicalDeviceMemoryProperties& phys
 VkDeviceMemory       allocateVulkanObjectMemory(const VkDevice device, const VkMemoryRequirements& memoryRequirements,
                                                 const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
                                                 const VkMemoryPropertyFlags memoryPropertyFlags, const VkMemoryAllocateFlags memoryAllocateFlags = 0);
+void                 uploadToHostVisibleBuffer(const VkDevice device, const void* data, const uint32_t bufferSize, const VkDeviceMemory memory);
 void                 uploadToDeviceLocalBuffer(const VkDevice device, const void* data, const uint32_t bufferSize, const VkBuffer stagingBuffer,
                                                const VkDeviceMemory stagingBufferMemory, const VkBuffer deviceBuffer, const VkCommandPool transferCommandPool,
-                                               const VkQueue queue);
+                                               const VkQueue queue, const uint32_t dstOffset = 0);

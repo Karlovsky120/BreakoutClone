@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+#include <map>
 #include <vector>
 
 struct BrickType {
@@ -13,19 +14,26 @@ struct BrickType {
     int32_t     breakScore     = 0;
 };
 
+struct BrickState {
+    uint32_t id;
+    uint32_t health;
+};
+
 class Level {
   public:
+    std::vector<std::vector<BrickState>> levelState;
+
+    uint32_t rowCount      = 0;
+    uint32_t columnCount   = 0;
+    uint32_t rowSpacing    = 0;
+    uint32_t columnSpacing = 0;
+
     Level(const char* path);
 
   private:
-    uint32_t    rowCount              = 0;
-    uint32_t    columnCount           = 0;
-    uint32_t    rowSpacing            = 0;
-    uint32_t    columnSpacing         = 0;
     const char* backgroundTexturePath = nullptr;
     uint32_t    lastFilledRow         = 0;
 
-    std::vector<BrickType> brickTypes;
-
+    std::map<uint32_t, BrickType>      brickTypes;
     std::vector<std::vector<uint32_t>> levelLayout;
 };

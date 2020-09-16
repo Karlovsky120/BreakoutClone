@@ -1,40 +1,50 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_scalar_block_layout  : require
-#extension GL_EXT_shader_16bit_storage : require
 
 #include "sharedStructures.h"
 
-layout(set = 0, binding = 0, scalar) readonly buffer Vertices {
-    float vertices[];
-};
+layout(location = 0) in vec2 vertex;
 
-layout(set = 0, binding = 1) readonly buffer Indices {
-    uint16_t indices[];
-};
+layout(location = 1) in vec3 instancePosition;
+layout(location = 2) in vec2 instanceScale;
+layout(location = 3) in uint  textureIndex;
 
-layout(location = 0) out vec3 worldPos;
+layout(location = 0) out uint textureIndexFrag;
 
 layout(push_constant) uniform PushConstants {
 	RasterPushData pd;
 } pc;
 
-void main() {
-    ivec3 indices = ivec3((int(indices[gl_VertexIndex]) * 3) + 0,
-                          (int(indices[gl_VertexIndex]) * 3) + 1,
-                          (int(indices[gl_VertexIndex]) * 3) + 2);
+vec2 positions[3] = vec2[](
+    vec2(-0.02888, 0.951388),
+    vec2(-0.02888, 0.993055),
+    vec2(0.02888, 0.951388)
+);
 
-    vec3 vertex = vec3(vertices[indices.x],
-                       vertices[indices.y],
-                       vertices[indices.z]);
+/*void main() {
+    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+    textureIndexFrag = gl_VertexIndex;
+}*/
 
-    worldPos = vertex;
+void main() { 
+    vec3 screenSizeInverse = vec3(1/1280.0f, 1/720.0f, 1);
 
-    gl_Position = vec4(vertex, 1.0) * pc.pd.cameraTransformation;
+    vec3 vertexPositioned = vec3(vertex * instanceScale, 0.0) + instancePosition;
+    vec3 vertexScaledToClipSpace = vertexPositioned * screenSizeInverse * vec3(2.0f, 2.0f, 1.0f) - vec3(1.0f, 1.0f, 0.0f);
 
-    gl_Position.x *= pc.pd.oneOverTanOfHalfFov * pc.pd.oneOverAspectRatio;
+    gl_Position = vec4(vertexScaledToClipSpace, 1.0); // * pc.pd.cameraTransformation;
+
+    textureIndexFrag = textureIndex;
+
+    /*gl_Position.x *= pc.pd.oneOverTanOfHalfFov * pc.pd.oneOverAspectRatio;
     gl_Position.y *= pc.pd.oneOverTanOfHalfFov;
     gl_Position.w = -gl_Position.z; 
-    gl_Position.z = pc.pd.near;
+    gl_Position.z = pc.pd.near;*/
+
+
+    //vec4 position = vec4(vec3(vertex * instanceScale, 0.0) + instancePosition, 1.0);
+    //vec4 position = vec4(vertex.x * 100, vertex.y * 100, 0.5, 1.0);
+    //gl_Position = position;
+    //gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
 }
