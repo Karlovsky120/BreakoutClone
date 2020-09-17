@@ -15,8 +15,8 @@ class Swapchain {
   public:
     VkExtent2D update();
 
-    Swapchain(SDL_Window* window, const VkSurfaceKHR& surface, const VkPhysicalDevice& physicalDevice, const VkDevice& device, const uint32_t& queueFamilyIndex,
-              const VkSurfaceFormatKHR& surfaceFormat);
+    Swapchain(SDL_Window* window, const VkSurfaceKHR& surface, const VkPhysicalDevice& physicalDevice, const VkDevice& device,
+              const uint32_t& queueFamilyIndex);
 
     ~Swapchain();
 
@@ -37,7 +37,7 @@ class Swapchain {
 
     VkSwapchainCreateInfoKHR m_swapchainCreateInfo          = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
     VkImageViewCreateInfo    m_swapchainImageViewCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-    const VkSurfaceFormatKHR m_surfaceFormat;
+    VkSurfaceFormatKHR       m_surfaceFormat;
     VkExtent2D               m_surfaceExtent;
 
     uint32_t m_swapchainImageCount = UINT32_MAX;

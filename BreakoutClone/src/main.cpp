@@ -10,8 +10,8 @@
 #undef main
 
 int main(int, char*[]) {
-    Breakout breakout;
     try {
+        Breakout breakout;
         breakout.run();
     } catch (std::runtime_error e) {
         printf("%s\n", e.what());
