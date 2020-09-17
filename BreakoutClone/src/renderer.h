@@ -51,24 +51,24 @@ class Renderer {
   private:
     SDL_Window* m_window = nullptr;
 
-    VkInstance       m_instance            = VK_NULL_HANDLE;
-    VkSurfaceKHR     m_surface             = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice      = VK_NULL_HANDLE;
-    VkDevice         m_device              = VK_NULL_HANDLE;
-    VkQueue          m_queue               = VK_NULL_HANDLE;
-    VkRenderPass     m_renderPass          = VK_NULL_HANDLE;
-    VkPipelineCache  m_pipelineCache       = VK_NULL_HANDLE;
-    VkPipelineLayout m_pipelineLayout      = VK_NULL_HANDLE;
-    VkPipeline       m_pipeline            = VK_NULL_HANDLE;
-    VkCommandPool    m_renderCommandPool   = VK_NULL_HANDLE;
-    VkCommandPool    m_transferCommandPool = VK_NULL_HANDLE;
+    VkInstance            m_instance            = VK_NULL_HANDLE;
+    VkSurfaceKHR          m_surface             = VK_NULL_HANDLE;
+    VkPhysicalDevice      m_physicalDevice      = VK_NULL_HANDLE;
+    VkDevice              m_device              = VK_NULL_HANDLE;
+    VkQueue               m_queue               = VK_NULL_HANDLE;
+    VkRenderPass          m_renderPass          = VK_NULL_HANDLE;
+    VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+    VkPipelineCache       m_pipelineCache       = VK_NULL_HANDLE;
+    VkPipelineLayout      m_pipelineLayout      = VK_NULL_HANDLE;
+    VkPipeline            m_pipeline            = VK_NULL_HANDLE;
+    VkCommandPool         m_renderCommandPool   = VK_NULL_HANDLE;
+    VkCommandPool         m_transferCommandPool = VK_NULL_HANDLE;
 
 #ifdef VALIDATION_ENABLED
     VkDebugUtilsMessengerEXT m_debugUtilsMessenger = VK_NULL_HANDLE;
 #endif
 
-    std::unique_ptr<Image> m_depthImage;
-
+    std::unique_ptr<Image>     m_depthImage;
     std::unique_ptr<Swapchain> m_swapchain;
 
     VkExtent2D                       m_surfaceExtent                  = {};
@@ -95,6 +95,7 @@ class Renderer {
     void createDevice();
     void createRenderPass();
     void createFramebuffers();
+    void createDescriptorLayout();
     void createPipelineCache();
     void createPipelineLayout();
     void createGraphicsPipeline(const char* vertexShaderPath, const char* fragmentShaderPath,

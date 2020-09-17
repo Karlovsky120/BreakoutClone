@@ -191,25 +191,6 @@ void Renderer::createInstance() {
     volkLoadInstance(m_instance);
 }
 
-const uint32_t Renderer::getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const {
-    uint32_t queueFamilyCount;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, 0);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-    uint32_t     queueFamilyIndex = UINT32_MAX;
-    VkQueueFlags queueFlags       = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
-    for (size_t i = 0; i < queueFamilyCount; ++i) {
-        if (queueFamilies[i].queueFlags & queueFlags) {
-            queueFamilyIndex = static_cast<uint32_t>(i);
-            break;
-        }
-    }
-
-    return queueFamilyIndex;
-}
-
 void Renderer::pickPhysicalDevice() {
     uint32_t physicalDeviceCount;
     VK_CHECK(vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, 0));
@@ -255,26 +236,26 @@ void Renderer::pickPhysicalDevice() {
 }
 
 void Renderer::createDevice() {
-    const float             queuePriorities       = 1.0f;
-    VkDeviceQueueCreateInfo deviceQueueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-    deviceQueueCreateInfo.queueCount              = 1;
-    deviceQueueCreateInfo.queueFamilyIndex        = m_queueFamilyIndex;
-    deviceQueueCreateInfo.pQueuePriorities        = &queuePriorities;
+    const float             queuePriorities  = 1.0f;
+    VkDeviceQueueCreateInfo queueCrreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+    queueCrreateInfo.queueCount              = 1;
+    queueCrreateInfo.queueFamilyIndex        = m_queueFamilyIndex;
+    queueCrreateInfo.pQueuePriorities        = &queuePriorities;
 
     std::array<const char*, 1> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-    VkDeviceCreateInfo deviceCreateInfo      = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
-    deviceCreateInfo.queueCreateInfoCount    = 1;
-    deviceCreateInfo.pQueueCreateInfos       = &deviceQueueCreateInfo;
-    deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
-    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    VkDeviceCreateInfo createInfo      = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
+    createInfo.queueCreateInfoCount    = 1;
+    createInfo.pQueueCreateInfos       = &queueCrreateInfo;
+    createInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     VkPhysicalDeviceFeatures2 physicalDeviceFeatures2  = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     physicalDeviceFeatures2.features.multiDrawIndirect = VK_TRUE;
 
-    deviceCreateInfo.pNext = &physicalDeviceFeatures2;
+    createInfo.pNext = &physicalDeviceFeatures2;
 
-    VK_CHECK(vkCreateDevice(m_physicalDevice, &deviceCreateInfo, nullptr, &m_device));
+    VK_CHECK(vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device));
     volkLoadDevice(m_device);
 }
 
@@ -307,22 +288,22 @@ void Renderer::createRenderPass() {
     subpass.pColorAttachments       = &colorRef;
     subpass.pDepthStencilAttachment = &depthRef;
 
-    VkRenderPassCreateInfo renderPassCreateInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-    renderPassCreateInfo.attachmentCount        = static_cast<uint32_t>(attachments.size());
-    renderPassCreateInfo.pAttachments           = attachments.data();
-    renderPassCreateInfo.subpassCount           = 1;
-    renderPassCreateInfo.pSubpasses             = &subpass;
+    VkRenderPassCreateInfo createInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+    createInfo.attachmentCount        = static_cast<uint32_t>(attachments.size());
+    createInfo.pAttachments           = attachments.data();
+    createInfo.subpassCount           = 1;
+    createInfo.pSubpasses             = &subpass;
 
-    VK_CHECK(vkCreateRenderPass(m_device, &renderPassCreateInfo, nullptr, &m_renderPass));
+    VK_CHECK(vkCreateRenderPass(m_device, &createInfo, nullptr, &m_renderPass));
 }
 
 void Renderer::createFramebuffers() {
-    VkFramebufferCreateInfo framebufferCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
-    framebufferCreateInfo.renderPass              = m_renderPass;
-    framebufferCreateInfo.attachmentCount         = 2;
-    framebufferCreateInfo.width                   = m_surfaceExtent.width;
-    framebufferCreateInfo.height                  = m_surfaceExtent.height;
-    framebufferCreateInfo.layers                  = 1;
+    VkFramebufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+    createInfo.renderPass              = m_renderPass;
+    createInfo.attachmentCount         = 2;
+    createInfo.width                   = m_surfaceExtent.width;
+    createInfo.height                  = m_surfaceExtent.height;
+    createInfo.layers                  = 1;
 
     m_framebuffers = std::vector<VkFramebuffer>(m_swapchainImageCount);
     std::array<VkImageView, 2> attachments({});
@@ -330,10 +311,26 @@ void Renderer::createFramebuffers() {
 
     const std::vector<VkImageView>& swapchainImageViews = m_swapchain->getImageViews();
     for (size_t i = 0; i < m_swapchainImageCount; ++i) {
-        attachments[0]                     = swapchainImageViews[i];
-        framebufferCreateInfo.pAttachments = attachments.data();
-        VK_CHECK(vkCreateFramebuffer(m_device, &framebufferCreateInfo, nullptr, &m_framebuffers[i]));
+        attachments[0]          = swapchainImageViews[i];
+        createInfo.pAttachments = attachments.data();
+        VK_CHECK(vkCreateFramebuffer(m_device, &createInfo, nullptr, &m_framebuffers[i]));
     }
+}
+
+void Renderer::createDescriptorLayout() {
+    std::array<VkDescriptorSetLayoutBinding, 1> descriptorSetLayoutBindings;
+
+    // Uniform buffer
+    descriptorSetLayoutBindings[0].binding         = 0;
+    descriptorSetLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descriptorSetLayoutBindings[0].descriptorCount = 1;
+    descriptorSetLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo createInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    createInfo.bindingCount                    = static_cast<uint32_t>(descriptorSetLayoutBindings.size());
+    createInfo.pBindings                       = descriptorSetLayoutBindings.data();
+
+    VK_CHECK(vkCreateDescriptorSetLayout(m_device, &createInfo, nullptr, &m_descriptorSetLayout));
 }
 
 void Renderer::createPipelineCache() {
@@ -342,51 +339,13 @@ void Renderer::createPipelineCache() {
     VK_CHECK(vkCreatePipelineCache(m_device, &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
 }
 
-const VkCommandPool Renderer::createCommandPool() {
-    VkCommandPoolCreateInfo commandPoolCreateInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-    commandPoolCreateInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    commandPoolCreateInfo.queueFamilyIndex        = m_queueFamilyIndex;
-
-    VkCommandPool commandPool = 0;
-    VK_CHECK(vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &commandPool));
-
-    return commandPool;
-}
-
-const VkShaderModule Renderer::loadShader(const char* pathToSource) const {
-    FILE* source;
-    fopen_s(&source, pathToSource, "rb");
-    assert(source);
-
-    fseek(source, 0, SEEK_END);
-    size_t length = static_cast<size_t>(ftell(source));
-    assert(length > 0);
-    fseek(source, 0, SEEK_SET);
-
-    char* buffer = new char[length];
-    if (fread(buffer, 1, length, source) != length) {
-        assert(false);
-    }
-
-    VkShaderModuleCreateInfo createInfo = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-    createInfo.codeSize                 = length;
-    createInfo.pCode                    = reinterpret_cast<uint32_t*>(buffer);
-
-    VkShaderModule shaderModule = 0;
-    VK_CHECK(vkCreateShaderModule(m_device, &createInfo, nullptr, &shaderModule));
-
-    delete[] buffer;
-
-    return shaderModule;
-}
-
 void Renderer::createPipelineLayout() {
-    VkPipelineLayoutCreateInfo rasterPipelineLayoutCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-    rasterPipelineLayoutCreateInfo.pushConstantRangeCount     = 0;
-    rasterPipelineLayoutCreateInfo.pPushConstantRanges        = nullptr;
-    rasterPipelineLayoutCreateInfo.setLayoutCount             = 0;
-    rasterPipelineLayoutCreateInfo.pSetLayouts                = nullptr;
-    VK_CHECK(vkCreatePipelineLayout(m_device, &rasterPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
+    VkPipelineLayoutCreateInfo createInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    createInfo.pushConstantRangeCount     = 0;
+    createInfo.pPushConstantRanges        = nullptr;
+    createInfo.setLayoutCount             = 1;
+    createInfo.pSetLayouts                = &m_descriptorSetLayout;
+    VK_CHECK(vkCreatePipelineLayout(m_device, &createInfo, nullptr, &m_pipelineLayout));
 }
 
 void Renderer::createGraphicsPipeline(const char* vertexShaderPath, const char* fragmentShaderPath,
@@ -469,20 +428,20 @@ void Renderer::createGraphicsPipeline(const char* vertexShaderPath, const char* 
 }
 
 void Renderer::createRenderCommandPoolsAndBuffers() {
-    VkCommandPoolCreateInfo commandPoolCreateInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-    commandPoolCreateInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    commandPoolCreateInfo.queueFamilyIndex        = m_queueFamilyIndex;
+    VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+    createInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    createInfo.queueFamilyIndex        = m_queueFamilyIndex;
 
-    VK_CHECK(vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &m_renderCommandPool));
+    VK_CHECK(vkCreateCommandPool(m_device, &createInfo, nullptr, &m_renderCommandPool));
 
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-    commandBufferAllocateInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferAllocateInfo.commandBufferCount          = m_swapchainImageCount;
-    commandBufferAllocateInfo.commandPool                 = m_renderCommandPool;
+    VkCommandBufferAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+    allocateInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandBufferCount          = m_swapchainImageCount;
+    allocateInfo.commandPool                 = m_renderCommandPool;
 
     m_renderCommandBuffers = std::vector<VkCommandBuffer>(m_swapchainImageCount);
     for (size_t i = 0; i < m_swapchainImageCount; ++i) {
-        VK_CHECK(vkAllocateCommandBuffers(m_device, &commandBufferAllocateInfo, m_renderCommandBuffers.data()));
+        VK_CHECK(vkAllocateCommandBuffers(m_device, &allocateInfo, m_renderCommandBuffers.data()));
     }
 }
 
@@ -510,18 +469,18 @@ void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuf
 
     VK_CHECK(vkBeginCommandBuffer(m_renderCommandBuffers[frameIndex], &commandBufferBeginInfo));
 
-    VkRenderPassBeginInfo renderPassBeginInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-    renderPassBeginInfo.renderPass            = m_renderPass;
-    renderPassBeginInfo.renderArea.offset     = {0, 0};
-    renderPassBeginInfo.renderArea.extent     = m_surfaceExtent;
+    VkRenderPassBeginInfo beginInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+    beginInfo.renderPass            = m_renderPass;
+    beginInfo.renderArea.offset     = {0, 0};
+    beginInfo.renderArea.extent     = m_surfaceExtent;
 
     VkClearValue                colorImageClearColor = {0.0f, 0.0f, 0.2f, 1.0f};
     VkClearValue                depthImageClearColor = {0.0f, 0.0f, 0.0f, 0.0f};
     std::array<VkClearValue, 2> imageClearColors     = {colorImageClearColor, depthImageClearColor};
-    renderPassBeginInfo.clearValueCount              = static_cast<uint32_t>(imageClearColors.size());
-    renderPassBeginInfo.pClearValues                 = imageClearColors.data();
-    renderPassBeginInfo.framebuffer                  = m_framebuffers[frameIndex];
-    vkCmdBeginRenderPass(m_renderCommandBuffers[frameIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    beginInfo.clearValueCount                        = static_cast<uint32_t>(imageClearColors.size());
+    beginInfo.pClearValues                           = imageClearColors.data();
+    beginInfo.framebuffer                            = m_framebuffers[frameIndex];
+    vkCmdBeginRenderPass(m_renderCommandBuffers[frameIndex], &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(m_renderCommandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
@@ -622,6 +581,63 @@ void Renderer::renderLoop() {
     }
 
     vkDeviceWaitIdle(m_device);
+}
+
+const uint32_t Renderer::getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const {
+    uint32_t queueFamilyCount;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, 0);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+
+    uint32_t     queueFamilyIndex = UINT32_MAX;
+    VkQueueFlags queueFlags       = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
+    for (size_t i = 0; i < queueFamilyCount; ++i) {
+        if (queueFamilies[i].queueFlags & queueFlags) {
+            queueFamilyIndex = static_cast<uint32_t>(i);
+            break;
+        }
+    }
+
+    return queueFamilyIndex;
+}
+
+const VkShaderModule Renderer::loadShader(const char* pathToSource) const {
+    FILE* source;
+    fopen_s(&source, pathToSource, "rb");
+    assert(source);
+
+    fseek(source, 0, SEEK_END);
+    size_t length = static_cast<size_t>(ftell(source));
+    assert(length > 0);
+    fseek(source, 0, SEEK_SET);
+
+    char* buffer = new char[length];
+    if (fread(buffer, 1, length, source) != length) {
+        assert(false);
+    }
+
+    VkShaderModuleCreateInfo createInfo = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+    createInfo.codeSize                 = length;
+    createInfo.pCode                    = reinterpret_cast<uint32_t*>(buffer);
+
+    VkShaderModule shaderModule = 0;
+    VK_CHECK(vkCreateShaderModule(m_device, &createInfo, nullptr, &shaderModule));
+
+    delete[] buffer;
+
+    return shaderModule;
+}
+
+const VkCommandPool Renderer::createCommandPool() {
+    VkCommandPoolCreateInfo commandPoolCreateInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+    commandPoolCreateInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    commandPoolCreateInfo.queueFamilyIndex        = m_queueFamilyIndex;
+
+    VkCommandPool commandPool = 0;
+    VK_CHECK(vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &commandPool));
+
+    return commandPool;
 }
 
 void Renderer::runRenderLoop() { m_object_instance->renderLoop(); }
