@@ -40,53 +40,75 @@ std::unique_ptr<Buffer> Resources::createBuffer(const VkDeviceSize& bufferSize, 
 }
 
 VkImage Resources::createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat) {
-    VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.usage             = imageUsageFlags;
-    imageCreateInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageCreateInfo.format            = imageFormat;
-    imageCreateInfo.extent            = {imageSize.width, imageSize.height, 1};
-    imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
-    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
-    imageCreateInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
-    imageCreateInfo.mipLevels         = 1;
-    imageCreateInfo.arrayLayers       = 1;
+    VkImageCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    createInfo.imageType         = VK_IMAGE_TYPE_2D;
+    createInfo.usage             = imageUsageFlags;
+    createInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+    createInfo.format            = imageFormat;
+    createInfo.extent            = {imageSize.width, imageSize.height, 1};
+    createInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    createInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    createInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.mipLevels         = 1;
+    createInfo.arrayLayers       = 1;
 
     VkImage image = 0;
-    VK_CHECK(vkCreateImage(Renderer::getDevice(), &imageCreateInfo, nullptr, &image));
+    VK_CHECK(vkCreateImage(Renderer::getDevice(), &createInfo, nullptr, &image));
 
     return image;
 }
 
 VkImageView Resources::createImageView(const VkImage& image, const VkFormat& format, const VkImageAspectFlags& aspectMask) {
-    VkImageViewCreateInfo imageViewCreateInfo           = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-    imageViewCreateInfo.image                           = image;
-    imageViewCreateInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-    imageViewCreateInfo.format                          = format;
-    imageViewCreateInfo.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    imageViewCreateInfo.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    imageViewCreateInfo.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    imageViewCreateInfo.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    imageViewCreateInfo.subresourceRange.aspectMask     = aspectMask;
-    imageViewCreateInfo.subresourceRange.baseMipLevel   = 0;
-    imageViewCreateInfo.subresourceRange.levelCount     = 1;
-    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    imageViewCreateInfo.subresourceRange.layerCount     = 1;
+    VkImageViewCreateInfo createInfo           = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    createInfo.image                           = image;
+    createInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+    createInfo.format                          = format;
+    createInfo.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.subresourceRange.aspectMask     = aspectMask;
+    createInfo.subresourceRange.baseMipLevel   = 0;
+    createInfo.subresourceRange.levelCount     = 1;
+    createInfo.subresourceRange.baseArrayLayer = 0;
+    createInfo.subresourceRange.layerCount     = 1;
 
     VkImageView imageView = 0;
-    VK_CHECK(vkCreateImageView(Renderer::getDevice(), &imageViewCreateInfo, nullptr, &imageView));
+    VK_CHECK(vkCreateImageView(Renderer::getDevice(), &createInfo, nullptr, &imageView));
 
     return imageView;
 }
 
+VkSampler Resources::createSampler() {
+    VkSamplerCreateInfo createInfo     = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    createInfo.magFilter               = VK_FILTER_LINEAR;
+    createInfo.minFilter               = VK_FILTER_LINEAR;
+    createInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.anisotropyEnable        = VK_FALSE;
+    createInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    createInfo.unnormalizedCoordinates = VK_FALSE;
+    createInfo.compareEnable           = VK_FALSE;
+    createInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    createInfo.mipLodBias              = 0.0f;
+    createInfo.minLod                  = 0.0f;
+    createInfo.maxLod                  = 0.0f;
+
+    VkSampler sampler = 0;
+    VK_CHECK(vkCreateSampler(Renderer::getDevice(), &createInfo, nullptr, &sampler));
+
+    return sampler;
+}
+
 VkBuffer Resources::createBuffer(const VkDeviceSize& bufferSize, const VkBufferUsageFlags& bufferUsageFlags) {
-    VkBufferCreateInfo bufferCreateInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    bufferCreateInfo.size               = bufferSize;
-    bufferCreateInfo.usage              = bufferUsageFlags;
-    bufferCreateInfo.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
+    VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    createInfo.size               = bufferSize;
+    createInfo.usage              = bufferUsageFlags;
+    createInfo.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
 
     VkBuffer buffer = 0;
-    VK_CHECK(vkCreateBuffer(Renderer::getDevice(), &bufferCreateInfo, nullptr, &buffer));
+    VK_CHECK(vkCreateBuffer(Renderer::getDevice(), &createInfo, nullptr, &buffer));
 
     return buffer;
 }

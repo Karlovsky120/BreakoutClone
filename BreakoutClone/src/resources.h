@@ -60,6 +60,7 @@ class Resources {
                                                const VkImageAspectFlags& aspectMask);
     static std::unique_ptr<Buffer> createBuffer(const VkDeviceSize& bufferSize, const VkBufferUsageFlags& bufferUsageFlags,
                                                 const VkMemoryPropertyFlags& memoryPropertyFlags);
+    static VkSampler               createSampler();
     static void                    uploadToHostVisibleBuffer(const void* data, const uint32_t& bufferSize, const VkDeviceMemory& memory);
     static void uploadToDeviceLocalBuffer(const void* data, const uint32_t& bufferSize, const Buffer& stagingBuffer, const VkBuffer& deviceBuffer,
                                           const uint32_t& dstOffset = 0);
