@@ -1,5 +1,7 @@
 #include "renderer.h"
 
+#include "sharedStructures.h"
+
 #include <array>
 #include <chrono>
 #include <stdexcept>
@@ -26,6 +28,9 @@ void Renderer::init(const char* vertexShaderPath, const char* fragmentShaderPath
 
     vkGetDeviceQueue(m_device, m_queueFamilyIndex, 0, &m_queue);
 
+    m_transferCommandPool = createCommandPool();
+    m_stagingBuffer       = Resources::createBuffer(STAGING_BUFFER_SIZE, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
     m_swapchain           = std::make_unique<Swapchain>(m_window, m_surface, m_physicalDevice, m_device, m_queueFamilyIndex);
     m_surfaceExtent       = m_swapchain->getSurfaceExtent();
     m_swapchainImageCount = m_swapchain->getImageCounts();
@@ -35,14 +40,20 @@ void Renderer::init(const char* vertexShaderPath, const char* fragmentShaderPath
 
     createRenderPass();
     createFramebuffers();
+
+    createDescriptorLayout();
+
     createPipelineCache();
     createPipelineLayout();
     createGraphicsPipeline(vertexShaderPath, fragmentShaderPath, pipelineVertexInputStateCreateInfo);
 
-    createRenderCommandPoolsAndBuffers();
-    createSyncObjects();
+    createDescriptorPool();
+    allocateDescriptorSet();
+    createUniformBuffer();
+    writeDescriptorSet();
 
-    m_transferCommandPool = createCommandPool();
+    createRenderCommandPoolsAndAllocateBuffers();
+    createSyncObjects();
 }
 
 Renderer::~Renderer() {
@@ -109,6 +120,7 @@ const VkDevice&                         Renderer::getDevice() { return m_object_
 const VkPhysicalDeviceProperties&       Renderer::getDeviceProperties() { return m_object_instance->m_physicalDeviceProperties; };
 const VkPhysicalDeviceMemoryProperties& Renderer::getMemoryProperties() { return m_object_instance->m_physicalDeviceMemoryProperties; };
 const VkCommandPool&                    Renderer::getTransferCommandPool() { return m_object_instance->m_transferCommandPool; };
+const Buffer&                           Renderer::getStagingBuffer() { return *(m_object_instance->m_stagingBuffer); }
 const VkQueue&                          Renderer::getQueue() { return m_object_instance->m_queue; }
 
 void Renderer::recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
@@ -427,7 +439,52 @@ void Renderer::createGraphicsPipeline(const char* vertexShaderPath, const char* 
     vkDestroyShaderModule(m_device, fragmentShader, nullptr);
 }
 
-void Renderer::createRenderCommandPoolsAndBuffers() {
+void Renderer::createDescriptorPool() {
+    std::array<VkDescriptorPoolSize, 1> descriptorPoolSizes = {{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
+
+    VkDescriptorPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+    createInfo.poolSizeCount              = static_cast<uint32_t>(descriptorPoolSizes.size());
+    createInfo.pPoolSizes                 = descriptorPoolSizes.data();
+    createInfo.maxSets                    = 1;
+    VK_CHECK(vkCreateDescriptorPool(m_device, &createInfo, nullptr, &m_descriptorPool));
+}
+
+void Renderer::allocateDescriptorSet() {
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    descriptorSetAllocateInfo.descriptorPool              = m_descriptorPool;
+    descriptorSetAllocateInfo.descriptorSetCount          = 1;
+    descriptorSetAllocateInfo.pSetLayouts                 = &m_descriptorSetLayout;
+
+    VK_CHECK(vkAllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, &m_descriptorSet));
+}
+
+void Renderer::createUniformBuffer() {
+    m_uniformBuffer = Resources::createBuffer(sizeof(UniformData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    UniformData uniformData = {1.0f / WINDOW_WIDTH, 1.0f / WINDOW_HEIGHT};
+
+    Resources::uploadToDeviceLocalBuffer(&uniformData, sizeof(uniformData), *m_stagingBuffer, m_uniformBuffer->buffer);
+}
+
+void Renderer::writeDescriptorSet() {
+    VkDescriptorBufferInfo descriptorBufferInfo;
+    descriptorBufferInfo.buffer = m_uniformBuffer->buffer;
+    descriptorBufferInfo.offset = 0;
+    descriptorBufferInfo.range  = sizeof(UniformData);
+
+    VkWriteDescriptorSet writeDescriptorSet = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+
+    writeDescriptorSet.dstBinding      = 0;
+    writeDescriptorSet.dstArrayElement = 0;
+    writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.pBufferInfo     = &descriptorBufferInfo;
+    writeDescriptorSet.dstSet          = m_descriptorSet;
+    vkUpdateDescriptorSets(m_device, 1, &writeDescriptorSet, 0, nullptr);
+}
+
+void Renderer::createRenderCommandPoolsAndAllocateBuffers() {
     VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     createInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     createInfo.queueFamilyIndex        = m_queueFamilyIndex;
@@ -483,6 +540,7 @@ void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuf
     vkCmdBeginRenderPass(m_renderCommandBuffers[frameIndex], &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(m_renderCommandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+    vkCmdBindDescriptorSets(m_renderCommandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
 
     VkDeviceSize offset = 0;
     vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], vertexBufferBindId, 1, &vertexBuffer, &offset);

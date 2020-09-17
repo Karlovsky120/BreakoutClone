@@ -24,6 +24,11 @@ struct Instance {
     uint health;
 };
 
+struct UniformData {
+    float inverseWindowWidth;
+    float inverseWindowHeight;
+};
+
 #ifdef CPP_SHADER_STRUCTURE
 #undef uint
 #undef vec2

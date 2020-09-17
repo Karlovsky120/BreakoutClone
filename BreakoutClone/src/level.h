@@ -45,7 +45,7 @@ class Level {
 
     const uint32_t getBrickCount() const;
     void           load(const uint32_t& vertexBufferBindId, const uint32_t& instanceBufferBindId, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer,
-                        Buffer& stagingBuffer, std::array<VkDrawIndexedIndirectCommand, 2>& drawCommands, VkBuffer& drawCommandsBuffer);
+                        const Buffer& stagingBuffer, std::array<VkDrawIndexedIndirectCommand, 2>& drawCommands, VkBuffer& drawCommandsBuffer);
 
   private:
     const char* m_backgroundTexturePath = nullptr;

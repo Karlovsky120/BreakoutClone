@@ -2,7 +2,16 @@
 
 #include "level.h"
 
-#define STAGING_BUFFER_SIZE 33'554'432 // 32MB
+#define PI 3.1415926535897932384f
+
+#define BALL_INDEX        0
+#define LEFT_WALL_INDEX   1
+#define RIGHT_WALL_INDEX  2
+#define PAD_INDEX         3
+#define BRICK_START_INDEX 4
+
+#define VERTEX_BUFFER_BIND_ID   0
+#define INSTANCE_BUFFER_BIND_ID 1
 
 class Breakout {
   public:
@@ -11,8 +20,6 @@ class Breakout {
     void run();
 
   private:
-    std::unique_ptr<Buffer> m_stagingBuffer;
-
     uint32_t m_squareVertexOffset;
     uint32_t m_squareIndexOffset;
     uint32_t m_squareIndexCount;

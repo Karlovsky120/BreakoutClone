@@ -23,7 +23,7 @@
 const uint32_t Level::getBrickCount() const { return m_brickCount; }
 
 void Level::load(const uint32_t& vertexBufferBindId, const uint32_t& instanceBufferBindId, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer,
-                 Buffer& stagingBuffer, std::array<VkDrawIndexedIndirectCommand, 2>& drawCommands, VkBuffer& drawCommandsBuffer) {
+                 const Buffer& stagingBuffer, std::array<VkDrawIndexedIndirectCommand, 2>& drawCommands, VkBuffer& drawCommandsBuffer) {
     drawCommands[1].instanceCount = BRICK_START_INDEX + m_brickCount;
     Resources::uploadToDeviceLocalBuffer(drawCommands.data(), VECTOR_SIZE_BYTES(drawCommands), stagingBuffer, drawCommandsBuffer, 0);
 

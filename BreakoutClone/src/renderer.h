@@ -25,6 +25,8 @@
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
+#define STAGING_BUFFER_SIZE 33'554'432 // 32MB
+
 class Renderer {
   public:
     static const Renderer* getInstance();
@@ -36,6 +38,7 @@ class Renderer {
     static const VkPhysicalDeviceProperties&       getDeviceProperties();
     static const VkPhysicalDeviceMemoryProperties& getMemoryProperties();
     static const VkCommandPool&                    getTransferCommandPool();
+    static const Buffer&                           getStagingBuffer();
     static const VkQueue&                          getQueue();
 
     static void recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
@@ -58,6 +61,8 @@ class Renderer {
     VkQueue               m_queue               = VK_NULL_HANDLE;
     VkRenderPass          m_renderPass          = VK_NULL_HANDLE;
     VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorPool      m_descriptorPool      = VK_NULL_HANDLE;
+    VkDescriptorSet       m_descriptorSet       = VK_NULL_HANDLE;
     VkPipelineCache       m_pipelineCache       = VK_NULL_HANDLE;
     VkPipelineLayout      m_pipelineLayout      = VK_NULL_HANDLE;
     VkPipeline            m_pipeline            = VK_NULL_HANDLE;
@@ -68,6 +73,8 @@ class Renderer {
     VkDebugUtilsMessengerEXT m_debugUtilsMessenger = VK_NULL_HANDLE;
 #endif
 
+    std::unique_ptr<Buffer>    m_stagingBuffer;
+    std::unique_ptr<Buffer>    m_uniformBuffer;
     std::unique_ptr<Image>     m_depthImage;
     std::unique_ptr<Swapchain> m_swapchain;
 
@@ -100,7 +107,11 @@ class Renderer {
     void createPipelineLayout();
     void createGraphicsPipeline(const char* vertexShaderPath, const char* fragmentShaderPath,
                                 const VkPipelineVertexInputStateCreateInfo& vertexInputStateCreateInfo);
-    void createRenderCommandPoolsAndBuffers();
+    void createDescriptorPool();
+    void allocateDescriptorSet();
+    void createUniformBuffer();
+    void writeDescriptorSet();
+    void createRenderCommandPoolsAndAllocateBuffers();
     void createSyncObjects();
     void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
                                    const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId, const VkBuffer& drawCommandBuffer) const;

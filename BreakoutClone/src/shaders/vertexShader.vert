@@ -14,6 +14,10 @@ layout(location = 4) in uint health;
 
 layout(location = 0) out uint textureIndexFrag;
 
+layout(set = 0, binding = 0) readonly buffer UnifromBuffer {
+    UniformData data;
+} ub;
+
 void main() {
     if (health == 0) {
         gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
@@ -22,12 +26,9 @@ void main() {
 
     textureIndexFrag = textureIndex;
 
-    vec3 screenSizeInverse = vec3(1/1280.0, 1/720.0, 1);
-
     vec3 vertexPositioned = vec3(vertex * instanceScale, 0.0) + instancePosition;
-    vec3 vertexScaledToClipSpace = vertexPositioned * screenSizeInverse * vec3(2.0, 2.0, 1.0) - vec3(1.0, 1.0, 0.0);
+    vec3 vertexScaledToClipSpace = vertexPositioned * vec3(ub.data.inverseWindowWidth, ub.data.inverseWindowHeight, 1);
+    vec3 vertexPositionedIntoClipSpace = vertexScaledToClipSpace * vec3(2.0, 2.0, 1.0) - vec3(1.0, 1.0, 0.0);
 
-    gl_Position = vec4(vertexScaledToClipSpace, 1.0); // * pc.pd.cameraTransformation;
-
-
+    gl_Position = vec4(vertexPositionedIntoClipSpace, 1.0);
 }
