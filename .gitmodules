@@ -8,3 +8,6 @@
 [submodule "external/tinyxml2"]
 	path = external/tinyxml2
 	url = https://github.com/leethomason/tinyxml2.git
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb.git
