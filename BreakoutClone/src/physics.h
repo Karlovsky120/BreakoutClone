@@ -1,5 +1,5 @@
 #pragma once
-class physics
-{
+class Physics {
+  public:
+    void resolveFrame();
 };
-

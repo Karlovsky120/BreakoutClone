@@ -9,12 +9,12 @@ layout(location = 0) in vec2 vertex;
 
 layout(location = 1) in vec3 instancePosition;
 layout(location = 2) in vec2 instanceScale;
-layout(location = 3) in int  textureIndex;
+layout(location = 3) in uint  textureIndex;
 layout(location = 4) in vec2 uvOffset;
 layout(location = 5) in vec2 uvScale;
 layout(location = 6) in uint health;
 
-layout(location = 0) out int textureIndexFrag;
+layout(location = 0) out uint textureIndexFrag;
 layout(location = 1) out vec2 uvCoords;
 
 layout(set = 0, binding = 0) readonly buffer UnifromBuffer {

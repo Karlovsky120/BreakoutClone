@@ -38,10 +38,10 @@
 
 const uint32_t Level::getBrickCount() const { return m_brickCount; }
 
-void Level::load(const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, std::array<VkDrawIndexedIndirectCommand, 2>& drawCommands,
-                 VkBuffer& drawCommandsBuffer) {
-    drawCommands[1].instanceCount = BRICK_START_INDEX + m_brickCount;
-    Resources::uploadToDeviceLocalBuffer(drawCommands.data(), VECTOR_SIZE_BYTES(drawCommands), drawCommandsBuffer, 0);
+void Level::load() {
+
+    // Load transparent texture to position 0
+    loadTexture("transparent.png");
 
     m_padTextureId             = loadTexture("pad.png");
     m_ballTextureId            = loadTexture("ball.png");
@@ -56,7 +56,7 @@ void Level::load(const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, std:
 
     generateRenderData();
 
-    Renderer::recordRenderCommandBuffers(vertexBuffer, indexBuffer, m_instanceBuffer.buffer, drawCommandsBuffer);
+    Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
 }
 
 Level::Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight)
@@ -91,8 +91,8 @@ void Level::parseXml(const char* fullPath) {
 
     m_brickCount = m_rowCount * m_columnCount;
 
-    std::map<const std::string, uint32_t> idMap;
-    idMap["_"]         = 0;
+    std::map<const std::string, uint32_t> idNameMap;
+    idNameMap["_"]     = 0;
     uint32_t idCounter = 1;
 
     const tinyxml2::XMLElement* brickTypesNode = levelData->FirstChildElement("BrickTypes");
@@ -102,7 +102,7 @@ void Level::parseXml(const char* fullPath) {
         BrickType brick;
 
         const std::string brickId = brickTypeElement->FindAttribute("Id")->Value();
-        idMap[brickId]            = idCounter;
+        idNameMap[brickId]        = idCounter;
         brick.id                  = idCounter;
         ++idCounter;
 
@@ -142,25 +142,25 @@ void Level::parseXml(const char* fullPath) {
     std::string       line;
     std::stringstream lineFeed(layoutData);
     while (std::getline(lineFeed, line, '\n')) {
-        std::vector<BrickState> row;
-        std::string             blockName;
-        std::stringstream       wordFeed(line);
+        std::vector<uint32_t> row;
+        std::string           blockName;
+        std::stringstream     wordFeed(line);
         while (std::getline(wordFeed, blockName, ' ')) {
-            auto id = idMap.find(blockName);
-            if (id != idMap.end()) {
-                row.push_back({id->second, m_brickTypes[id->second].hitPoints});
+            auto id = idNameMap.find(blockName);
+            if (id != idNameMap.end()) {
+                row.push_back(id->second);
             }
         }
         while (row.size() < m_columnCount) {
-            row.push_back({0, 0});
+            row.push_back(0);
         }
 
-        m_levelState.push_back(row);
+        m_levelLayout.push_back(row);
     }
 
-    while (m_levelState.size() < m_rowCount) {
-        std::vector<BrickState> row(m_columnCount, {0, 0});
-        m_levelState.push_back(row);
+    while (m_levelLayout.size() < m_rowCount) {
+        std::vector<uint32_t> row(m_columnCount, 0);
+        m_levelLayout.push_back(row);
     }
 }
 
@@ -178,6 +178,14 @@ void Level::generateRenderData() {
 #pragma warning(suppress : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value
     m_instances = std::vector<Instance>(BRICK_START_INDEX + m_brickCount);
 
+    // Background
+    m_instances[BACKGROUND_INDEX].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f, BACKGROUND_DEPTH};
+    m_instances[BACKGROUND_INDEX].scale        = {m_windowWidth, m_windowHeight};
+    m_instances[BACKGROUND_INDEX].textureIndex = m_backgroundTextureId;
+    m_instances[BACKGROUND_INDEX].uvOffset     = {0.0f, 0.0f};
+    m_instances[BACKGROUND_INDEX].uvScale      = {1.0f, 1.0f};
+    m_instances[BACKGROUND_INDEX].health       = UINT32_MAX;
+
     // Left wall
     m_instances[LEFT_WALL_INDEX].position     = {wallWidth * 0.5f, m_windowHeight * 0.5f, GAME_DEPTH};
     m_instances[LEFT_WALL_INDEX].scale        = {wallWidth, m_windowHeight};
@@ -193,14 +201,6 @@ void Level::generateRenderData() {
     m_instances[RIGHT_WALL_INDEX].uvOffset     = {m_windowWidth - wallWidth / static_cast<float>(m_windowWidth), 0.0f};
     m_instances[RIGHT_WALL_INDEX].uvScale      = {wallWidth / static_cast<float>(m_windowWidth), 1.0f};
     m_instances[RIGHT_WALL_INDEX].health       = UINT32_MAX;
-
-    // Background
-    m_instances[BACKGROUND_INDEX].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f, BACKGROUND_DEPTH};
-    m_instances[BACKGROUND_INDEX].scale        = {m_windowWidth, m_windowHeight};
-    m_instances[BACKGROUND_INDEX].textureIndex = m_backgroundTextureId;
-    m_instances[BACKGROUND_INDEX].uvOffset     = {0.0f, 0.0f};
-    m_instances[BACKGROUND_INDEX].uvScale      = {1.0f, 1.0f};
-    m_instances[BACKGROUND_INDEX].health       = UINT32_MAX;
 
     // The pad
     m_instances[PAD_INDEX].position     = {wallWidth + playAreaWidth * 0.5f, padOffset, GAME_DEPTH};
@@ -224,14 +224,14 @@ void Level::generateRenderData() {
     uint32_t instanceDataIndex = BRICK_START_INDEX;
     float    offsetY           = m_rowSpacing + 0.5f * brickHeight;
     float    stepY             = m_rowSpacing + brickHeight;
-    for (size_t i = 0; i < m_levelState.size(); ++i, offsetY += stepY) {
-        std::vector<BrickState>& brickRow = m_levelState[i];
-        float                    offsetX  = wallWidth + m_columnSpacing + 0.5f * brickWidth;
-        float                    stepX    = m_columnSpacing + brickWidth;
+    for (size_t i = 0; i < m_levelLayout.size(); ++i, offsetY += stepY) {
+        std::vector<uint32_t>& brickRow = m_levelLayout[i];
+        float                  offsetX  = wallWidth + m_columnSpacing + 0.5f * brickWidth;
+        float                  stepX    = m_columnSpacing + brickWidth;
         for (size_t j = 0; j < brickRow.size(); ++j, offsetX += stepX) {
             m_instances[instanceDataIndex].position     = {offsetX, offsetY, 0.0f};
             m_instances[instanceDataIndex].scale        = {brickWidth, brickHeight};
-            m_instances[instanceDataIndex].textureIndex = m_brickTypes[m_levelState[i][j].id].textureId;
+            m_instances[instanceDataIndex].textureIndex = m_brickTypes[m_levelLayout[i][j]].textureId;
             m_instances[instanceDataIndex].uvOffset     = {0.0f, 0.0f};
             m_instances[instanceDataIndex].uvScale      = {1.0f, 1.0f};
             m_instances[instanceDataIndex].health       = 1;
@@ -242,6 +242,7 @@ void Level::generateRenderData() {
     uint32_t instanceDataBufferSize = VECTOR_SIZE_BYTES(m_instances);
     m_instanceBuffer                = Resources::createBuffer(instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    Renderer::nameObject(&m_instanceBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Instance buffer");
     Resources::uploadToHostVisibleBuffer(m_instances.data(), instanceDataBufferSize, m_instanceBuffer.memory);
 }
 
@@ -256,8 +257,6 @@ uint32_t Level::loadTexture(const std::string& pathToTexture, const float& scale
     std::filesystem::path fullPath = std::filesystem::current_path();
     fullPath += "\\resources\\textures\\";
     fullPath += pathToTexture;
-
-    const char* p = fullPath.string().c_str();
 
     int      textureWidth;
     int      textureHeight;

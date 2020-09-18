@@ -19,9 +19,9 @@
 #define MAX_COLUMN_SPACING 5
 #define MAX_ROW_SPACING    5
 
-#define LEFT_WALL_INDEX   0
-#define RIGHT_WALL_INDEX  1
-#define BACKGROUND_INDEX  2
+#define BACKGROUND_INDEX  0
+#define LEFT_WALL_INDEX   1
+#define RIGHT_WALL_INDEX  2
 #define PAD_INDEX         3
 #define BALL_INDEX        4
 #define BRICK_START_INDEX 5
@@ -39,16 +39,10 @@ struct BrickType {
     std::string breakSoundPath = "";
 };
 
-struct BrickState {
-    uint32_t id;
-    uint32_t health;
-};
-
 class Level {
   public:
     const uint32_t getBrickCount() const;
-    void           load(const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, std::array<VkDrawIndexedIndirectCommand, 2>& drawCommands,
-                        VkBuffer& drawCommandsBuffer);
+    void           load();
     Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight);
     void destroy();
 
@@ -73,8 +67,8 @@ class Level {
     uint32_t m_backgroundTextureId;
     uint32_t m_backgroundTextureSmallId;
 
-    std::vector<Instance>                m_instances;
-    std::vector<std::vector<BrickState>> m_levelState;
+    std::vector<Instance>              m_instances;
+    std::vector<std::vector<uint32_t>> m_levelLayout;
 
     std::map<uint32_t, BrickType>   m_brickTypes;
     std::map<std::string, uint32_t> m_textureCacheMap;

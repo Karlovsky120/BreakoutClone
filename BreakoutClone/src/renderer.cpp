@@ -29,6 +29,7 @@ void Renderer::init() {
 
     m_transferCommandPool = createCommandPool();
     m_stagingBuffer       = Resources::createBuffer(STAGING_BUFFER_SIZE, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    nameObject(&m_stagingBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Staging buffer");
 
     m_swapchain           = std::make_unique<Swapchain>(m_window, m_surface, m_physicalDevice, m_device, m_queueFamilyIndex);
     m_surfaceExtent       = m_swapchain->getSurfaceExtent();
@@ -55,6 +56,8 @@ void Renderer::init() {
 
     createRenderCommandPoolsAndAllocateBuffers();
     createSyncObjects();
+
+    createVertexAndIndexBuffers();
 
     setupRenderLoop();
 }
@@ -96,6 +99,8 @@ void Renderer::destroy() {
 
     vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
+    m_indexBuffer.destroy();
+    m_vertexBuffer.destroy();
     m_stagingBuffer.destroy();
     m_uniformBuffer.destroy();
     m_depthImage.destroy();
@@ -158,10 +163,9 @@ void Renderer::renderAndPresentImage() {
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
-                                          const VkBuffer& drawCommandBuffer) {
+void Renderer::recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount) {
     for (uint32_t i = 0; i < getInstance()->m_swapchainImageCount; ++i) {
-        getInstance()->recordRenderCommandBuffer(i, vertexBuffer, indexBuffer, instanceBuffer, drawCommandBuffer);
+        getInstance()->recordRenderCommandBuffer(i, instanceBuffer, instanceCount);
     }
 }
 
@@ -295,7 +299,6 @@ void Renderer::createDevice() {
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     VkPhysicalDeviceFeatures2 physicalDeviceFeatures2                       = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    physicalDeviceFeatures2.features.multiDrawIndirect                      = VK_TRUE;
     physicalDeviceFeatures2.features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 
     createInfo.pNext = &physicalDeviceFeatures2;
@@ -437,15 +440,15 @@ void Renderer::createGraphicsPipeline() {
     // Vertex position
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = VERTEX_BUFFER_BIND_ID;
     vertexInputAttributeDescriptions[inputAttributeIndex].location = 0;
-    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = 0;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Vertex, position);
     ++inputAttributeIndex;
 
     // Instance position
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
     vertexInputAttributeDescriptions[inputAttributeIndex].location = 1;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = 0;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, position);
     ++inputAttributeIndex;
 
     // Instance scale
@@ -458,7 +461,7 @@ void Renderer::createGraphicsPipeline() {
     // Instance texture index
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
     vertexInputAttributeDescriptions[inputAttributeIndex].location = 3;
-    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_SINT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_UINT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, textureIndex);
     ++inputAttributeIndex;
 
@@ -517,7 +520,7 @@ void Renderer::createGraphicsPipeline() {
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     rasterizationStateCreateInfo.lineWidth                              = 1.0f;
     rasterizationStateCreateInfo.frontFace                              = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizationStateCreateInfo.cullMode                               = VK_CULL_MODE_NONE; // VK_CULL_MODE_BACK_BIT;
+    rasterizationStateCreateInfo.cullMode                               = VK_CULL_MODE_BACK_BIT;
     createInfo.pRasterizationState                                      = &rasterizationStateCreateInfo;
 
     VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
@@ -576,7 +579,7 @@ void Renderer::allocateDescriptorSet() {
 void Renderer::createUniformBuffer() {
     m_uniformBuffer = Resources::createBuffer(sizeof(UniformData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
+    nameObject(&m_uniformBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Uniform buffer");
     UniformData uniformData = {1.0f / WINDOW_WIDTH, 1.0f / WINDOW_HEIGHT};
 
     Resources::uploadToDeviceLocalBuffer(&uniformData, sizeof(uniformData), m_uniformBuffer.buffer);
@@ -636,13 +639,35 @@ void Renderer::createSyncObjects() {
     }
 }
 
+void Renderer::createVertexAndIndexBuffers() {
+    std::vector<Vertex>   vertices = {{{-0.5, -0.5}}, {{-0.5, 0.5}}, {{0.5, -0.5}}, {{0.5, 0.5}}};
+    std::vector<uint16_t> indices  = {0, 1, 2, 1, 3, 2};
+
+    m_vertexBuffer = Resources::createBuffer(VECTOR_SIZE_BYTES(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    nameObject(&m_vertexBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Vertex buffer");
+    Resources::uploadToDeviceLocalBuffer(vertices.data(), VECTOR_SIZE_BYTES(vertices), m_vertexBuffer.buffer);
+
+    m_indexBuffer = Resources::createBuffer(VECTOR_SIZE_BYTES(indices), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    nameObject(&m_indexBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Index buffer");
+    Resources::uploadToDeviceLocalBuffer(indices.data(), VECTOR_SIZE_BYTES(indices), m_indexBuffer.buffer);
+}
+
 void Renderer::updateTextureArray(std::vector<Image>& textures) {
     VkDescriptorImageInfo descriptorImageInfo;
     descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     std::vector<VkDescriptorImageInfo> descriptorImageInfos;
-    for (const Image& texture : textures) {
-        descriptorImageInfo.imageView = texture.view;
+    size_t                             i = 0;
+    for (; i < textures.size(); ++i) {
+        descriptorImageInfo.imageView = textures[i].view;
+        descriptorImageInfos.push_back(descriptorImageInfo);
+    }
+
+    // Fill the bindings so valdation layers would shut up.
+    for (; i < MAX_TEXTURE_COUNT; ++i) {
+        descriptorImageInfo.imageView = textures[0].view;
         descriptorImageInfos.push_back(descriptorImageInfo);
     }
 
@@ -650,15 +675,26 @@ void Renderer::updateTextureArray(std::vector<Image>& textures) {
     writeDescriptorSet.dstBinding           = 1;
     writeDescriptorSet.dstArrayElement      = 0;
     writeDescriptorSet.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writeDescriptorSet.descriptorCount      = static_cast<uint32_t>(textures.size());
+    writeDescriptorSet.descriptorCount      = static_cast<uint32_t>(descriptorImageInfos.size());
     writeDescriptorSet.pImageInfo           = descriptorImageInfos.data();
     writeDescriptorSet.dstSet               = m_renderer->m_descriptorSet;
 
     vkUpdateDescriptorSets(m_renderer->m_device, 1, &writeDescriptorSet, 0, nullptr);
 }
 
-void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
-                                         const VkBuffer& drawCommandBuffer) const {
+#pragma warning(suppress : 4100) // '*' unreferenced formal parameter (in release mode)
+void Renderer::nameObject(void* handle, const VkObjectType& type, const char* name) {
+#ifdef VALIDATION_ENABLED
+    VkDebugUtilsObjectNameInfoEXT objectNameInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+    objectNameInfo.objectHandle                  = *reinterpret_cast<uint64_t*>(handle);
+    objectNameInfo.objectType                    = type;
+    objectNameInfo.pObjectName                   = name;
+
+    VK_CHECK(vkSetDebugUtilsObjectNameEXT(m_renderer->m_device, &objectNameInfo));
+#endif
+}
+
+void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& instanceBuffer, const uint32_t& instanceCount) const {
     VkCommandBufferBeginInfo commandBufferBeginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 
     VK_CHECK(vkBeginCommandBuffer(m_renderCommandBuffers[frameIndex], &commandBufferBeginInfo));
@@ -680,18 +716,12 @@ void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuf
     vkCmdBindDescriptorSets(m_renderCommandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
 
     VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], VERTEX_BUFFER_BIND_ID, 1, &vertexBuffer, &offset);
+    vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], VERTEX_BUFFER_BIND_ID, 1, &m_vertexBuffer.buffer, &offset);
     vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], INSTANCE_BUFFER_BIND_ID, 1, &instanceBuffer, &offset);
 
-    vkCmdBindIndexBuffer(m_renderCommandBuffers[frameIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(m_renderCommandBuffers[frameIndex], m_indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 
-    if (m_physicalDeviceProperties.limits.maxDrawIndirectCount >= 2) {
-        vkCmdDrawIndexedIndirect(m_renderCommandBuffers[frameIndex], drawCommandBuffer, 0, 2, sizeof(VkDrawIndexedIndirectCommand));
-    } else {
-        vkCmdDrawIndexedIndirect(m_renderCommandBuffers[frameIndex], drawCommandBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
-        vkCmdDrawIndexedIndirect(m_renderCommandBuffers[frameIndex], drawCommandBuffer, sizeof(VkDrawIndexedIndirectCommand), 1,
-                                 sizeof(VkDrawIndexedIndirectCommand));
-    }
+    vkCmdDrawIndexed(m_renderCommandBuffers[frameIndex], 6, instanceCount, 0, 0, 0);
 
     vkCmdEndRenderPass(m_renderCommandBuffers[frameIndex]);
 

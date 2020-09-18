@@ -57,7 +57,7 @@ class Resources {
                                         const VkMemoryPropertyFlags& memoryPropertyFlags);
     static const VkSampler createSampler();
     static void            uploadToHostVisibleBuffer(const void* data, const uint32_t& bufferSize, const VkDeviceMemory& memory);
-    static void            uploadToDeviceLocalBuffer(const void* data, const uint32_t& bufferSize, const VkBuffer& deviceBuffer, const uint32_t& dstOffset = 0);
+    static void            uploadToDeviceLocalBuffer(const void* data, const uint32_t& bufferSize, const VkBuffer& deviceBuffer);
     static void            uploadToDeviceLocalImage(const void* data, const uint32_t& imageSize, const Image& deviceImage, const VkImageLayout& initialLayout,
                                                     const VkImageLayout& finalLayout);
 

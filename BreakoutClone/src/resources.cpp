@@ -106,7 +106,7 @@ void Resources::uploadToHostVisibleBuffer(const void* data, const uint32_t& buff
     vkUnmapMemory(device, bufferMemory);
 }
 
-void Resources::uploadToDeviceLocalBuffer(const void* data, const uint32_t& bufferSize, const VkBuffer& deviceBuffer, const uint32_t& dstOffset) {
+void Resources::uploadToDeviceLocalBuffer(const void* data, const uint32_t& bufferSize, const VkBuffer& deviceBuffer) {
 
     const VkDevice& device        = Renderer::getDevice();
     const Buffer&   stagingBuffer = Renderer::getStagingBuffer();
@@ -130,7 +130,7 @@ void Resources::uploadToDeviceLocalBuffer(const void* data, const uint32_t& buff
 
     VkBufferCopy bufferCopy = {};
     bufferCopy.srcOffset    = 0;
-    bufferCopy.dstOffset    = dstOffset;
+    bufferCopy.dstOffset    = 0;
     bufferCopy.size         = bufferSize;
     vkCmdCopyBuffer(transferCommandBuffer, stagingBuffer.buffer, deviceBuffer, 1, &bufferCopy);
     VK_CHECK(vkEndCommandBuffer(transferCommandBuffer));

@@ -51,9 +51,9 @@ class Renderer {
     void        acquireImage();
     void        renderAndPresentImage();
 
-    static void recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
-                                           const VkBuffer& drawCommandBuffer);
+    static void recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
     static void updateTextureArray(std::vector<Image>& textures);
+    static void nameObject(void* handle, const VkObjectType& type, const char* name);
 
     void destroy();
 
@@ -83,6 +83,8 @@ class Renderer {
     VkDebugUtilsMessengerEXT m_debugUtilsMessenger = VK_NULL_HANDLE;
 #endif
 
+    Buffer                     m_vertexBuffer;
+    Buffer                     m_indexBuffer;
     Buffer                     m_stagingBuffer;
     Buffer                     m_uniformBuffer;
     Image                      m_depthImage;
@@ -129,8 +131,8 @@ class Renderer {
     void createRenderCommandPoolsAndAllocateBuffers();
     void createSyncObjects();
     void setupRenderLoop();
-    void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
-                                   const VkBuffer& drawCommandBuffer) const;
+    void createVertexAndIndexBuffers();
+    void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& instanceBuffer, const uint32_t& instanceCount) const;
 
     const uint32_t       getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const;
     const VkShaderModule loadShader(const char* pathToSource) const;
