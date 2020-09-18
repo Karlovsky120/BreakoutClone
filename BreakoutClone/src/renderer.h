@@ -29,7 +29,7 @@
 
 class Renderer {
   public:
-    static const Renderer* getInstance();
+    static Renderer* getInstance();
 
     static void initRenderer(const char* vertexShaderPath, const char* fragmentShaderPath,
                              const VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo);
@@ -41,10 +41,12 @@ class Renderer {
     static const Buffer&                           getStagingBuffer();
     static const VkQueue&                          getQueue();
 
+    static void setWindowTitle(const char* title);
+    void        acquireImage();
+    void        renderAndPresentImage();
+
     static void recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
                                            const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId, const VkBuffer& drawCommandBuffer);
-
-    static void runRenderLoop();
 
     ~Renderer();
 
@@ -81,6 +83,8 @@ class Renderer {
     VkExtent2D                       m_surfaceExtent                  = {};
     VkPhysicalDeviceProperties       m_physicalDeviceProperties       = {};
     VkPhysicalDeviceMemoryProperties m_physicalDeviceMemoryProperties = {};
+    VkSubmitInfo                     m_renderSubmitInfo               = {};
+    VkPresentInfoKHR                 m_presentInfo                    = {};
 
     std::vector<VkFramebuffer>   m_framebuffers;
     std::vector<VkCommandBuffer> m_renderCommandBuffers;
@@ -91,6 +95,10 @@ class Renderer {
 
     uint32_t m_queueFamilyIndex    = UINT32_MAX;
     uint32_t m_swapchainImageCount = UINT32_MAX;
+    uint32_t m_currentImageIndex   = UINT32_MAX;
+    uint32_t m_currentFrame        = 0;
+
+    VkPipelineStageFlags m_renderSubmitWaitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
     void init(const char* vertexShaderPath, const char* fragmentShaderPath, const VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo);
     void initSDL();
@@ -113,14 +121,13 @@ class Renderer {
     void writeDescriptorSet();
     void createRenderCommandPoolsAndAllocateBuffers();
     void createSyncObjects();
+    void setupRenderLoop();
     void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
                                    const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId, const VkBuffer& drawCommandBuffer) const;
 
     const uint32_t       getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const;
     const VkShaderModule loadShader(const char* pathToSource) const;
     const VkCommandPool  createCommandPool();
-
-    void renderLoop();
 
 #ifdef VALIDATION_ENABLED
     static VkBool32 VKAPI_CALL debugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,

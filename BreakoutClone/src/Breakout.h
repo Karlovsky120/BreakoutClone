@@ -42,4 +42,5 @@ class Breakout {
     void generateVertexAndIndexBuffers();
     void loadLevelData();
     void setupIndirectDrawCommands();
+    void gameLoop();
 };

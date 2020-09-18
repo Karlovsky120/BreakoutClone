@@ -54,6 +54,8 @@ void Renderer::init(const char* vertexShaderPath, const char* fragmentShaderPath
 
     createRenderCommandPoolsAndAllocateBuffers();
     createSyncObjects();
+
+    setupRenderLoop();
 }
 
 Renderer::~Renderer() {
@@ -107,8 +109,8 @@ Renderer::~Renderer() {
     SDL_Quit();
 }
 
-Renderer*       Renderer::m_object_instance;
-const Renderer* Renderer::getInstance() { return m_object_instance; }
+Renderer* Renderer::m_object_instance;
+Renderer* Renderer::getInstance() { return m_object_instance; }
 
 void Renderer::initRenderer(const char* vertexShaderPath, const char* fragmentShaderPath,
                             const VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo) {
@@ -122,6 +124,34 @@ const VkPhysicalDeviceMemoryProperties& Renderer::getMemoryProperties() { return
 const VkCommandPool&                    Renderer::getTransferCommandPool() { return m_object_instance->m_transferCommandPool; };
 const Buffer&                           Renderer::getStagingBuffer() { return *(m_object_instance->m_stagingBuffer); }
 const VkQueue&                          Renderer::getQueue() { return m_object_instance->m_queue; }
+
+void Renderer::setWindowTitle(const char* title) { SDL_SetWindowTitle(m_object_instance->m_window, title); }
+
+void Renderer::acquireImage() {
+    vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+
+    VK_CHECK(vkAcquireNextImageKHR(m_device, m_swapchain->get(), UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_currentImageIndex));
+
+    if (m_imagesInFlight[m_currentImageIndex] != VK_NULL_HANDLE) {
+        vkWaitForFences(m_device, 1, &m_imagesInFlight[m_currentImageIndex], VK_TRUE, UINT64_MAX);
+    }
+    m_imagesInFlight[m_currentImageIndex] = m_inFlightFences[m_currentFrame];
+}
+
+void Renderer::renderAndPresentImage() {
+    vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
+
+    m_renderSubmitInfo.pWaitSemaphores   = &m_imageAvailableSemaphores[m_currentFrame];
+    m_renderSubmitInfo.pCommandBuffers   = &m_renderCommandBuffers[m_currentImageIndex];
+    m_renderSubmitInfo.pSignalSemaphores = &m_renderFinishedSemaphores[m_currentFrame];
+    VK_CHECK(vkQueueSubmit(m_queue, 1, &m_renderSubmitInfo, m_inFlightFences[m_currentFrame]));
+
+    m_presentInfo.pWaitSemaphores = &m_renderFinishedSemaphores[m_currentFrame];
+    m_presentInfo.pImageIndices   = &m_currentImageIndex;
+    VK_CHECK(vkQueuePresentKHR(m_queue, &m_presentInfo));
+
+    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
 
 void Renderer::recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
                                           const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId, const VkBuffer& drawCommandBuffer) {
@@ -561,84 +591,17 @@ void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuf
     VK_CHECK(vkEndCommandBuffer(m_renderCommandBuffers[frameIndex]));
 }
 
-void Renderer::renderLoop() {
-    uint32_t currentFrame = 0;
-    bool     updatedUI    = false;
+void Renderer::setupRenderLoop() {
+    m_renderSubmitInfo                      = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    m_renderSubmitInfo.waitSemaphoreCount   = 1;
+    m_renderSubmitInfo.pWaitDstStageMask    = &m_renderSubmitWaitStage;
+    m_renderSubmitInfo.commandBufferCount   = 1;
+    m_renderSubmitInfo.signalSemaphoreCount = 1;
 
-    std::chrono::high_resolution_clock::time_point oldTime = std::chrono::high_resolution_clock::now();
-    uint32_t                                       time    = 0;
-
-    SDL_Event sdlEvent;
-    bool      quit = false;
-
-    VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-    VkSubmitInfo submitInfo         = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-    submitInfo.waitSemaphoreCount   = 1;
-    submitInfo.pWaitDstStageMask    = &waitStage;
-    submitInfo.commandBufferCount   = 1;
-    submitInfo.signalSemaphoreCount = 1;
-
-    const VkSwapchainKHR& swapchain = m_swapchain->get();
-
-    VkPresentInfoKHR presentInfo   = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.swapchainCount     = 1;
-    presentInfo.pSwapchains        = &swapchain;
-
-    while (!quit) {
-        while (SDL_PollEvent(&sdlEvent)) {
-            switch (sdlEvent.type) {
-            case SDL_QUIT:
-                quit = true;
-                break;
-            case SDL_KEYDOWN:
-                // m_keyStates[sdlEvent.key.keysym.sym].pressed = true;
-                break;
-            case SDL_KEYUP:
-                // m_keyStates[sdlEvent.key.keysym.sym].pressed = false;
-                break;
-            }
-        }
-
-        vkWaitForFences(m_device, 1, &m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-        uint32_t imageIndex;
-        VK_CHECK(vkAcquireNextImageKHR(m_device, m_swapchain->get(), UINT64_MAX, m_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex));
-
-        if (m_imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-            vkWaitForFences(m_device, 1, &m_imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
-        }
-        m_imagesInFlight[imageIndex] = m_inFlightFences[currentFrame];
-
-        std::chrono::high_resolution_clock::time_point newTime = std::chrono::high_resolution_clock::now();
-        uint32_t frameTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::microseconds>(newTime - oldTime).count());
-        oldTime            = newTime;
-        time += frameTime;
-
-        if (time > 500'000 || updatedUI) {
-            char title[256];
-            sprintf_s(title, "Breakout! Frametime: %.2fms", frameTime / 1'000.0f);
-            SDL_SetWindowTitle(m_window, title);
-            time      = 0;
-            updatedUI = false;
-        }
-
-        vkResetFences(m_device, 1, &m_inFlightFences[currentFrame]);
-
-        submitInfo.pWaitSemaphores   = &m_imageAvailableSemaphores[currentFrame];
-        submitInfo.pCommandBuffers   = &m_renderCommandBuffers[imageIndex];
-        submitInfo.pSignalSemaphores = &m_renderFinishedSemaphores[currentFrame];
-        VK_CHECK(vkQueueSubmit(m_queue, 1, &submitInfo, m_inFlightFences[currentFrame]));
-
-        presentInfo.pWaitSemaphores = &m_renderFinishedSemaphores[currentFrame];
-        presentInfo.pImageIndices   = &imageIndex;
-        VK_CHECK(vkQueuePresentKHR(m_queue, &presentInfo));
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-    }
-
-    vkDeviceWaitIdle(m_device);
+    m_presentInfo                    = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+    m_presentInfo.waitSemaphoreCount = 1;
+    m_presentInfo.swapchainCount     = 1;
+    m_presentInfo.pSwapchains        = &m_swapchain->get();
 }
 
 const uint32_t Renderer::getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const {
@@ -697,8 +660,6 @@ const VkCommandPool Renderer::createCommandPool() {
 
     return commandPool;
 }
-
-void Renderer::runRenderLoop() { m_object_instance->renderLoop(); }
 
 #ifdef VALIDATION_ENABLED
 VkBool32 VKAPI_CALL Renderer::debugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,

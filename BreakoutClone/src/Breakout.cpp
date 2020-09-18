@@ -154,6 +154,51 @@ void Breakout::setupIndirectDrawCommands() {
                                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 }
 
+void Breakout::gameLoop() {
+    bool updatedUI = false;
+
+    std::chrono::high_resolution_clock::time_point oldTime = std::chrono::high_resolution_clock::now();
+    uint32_t                                       time    = 0;
+
+    SDL_Event sdlEvent;
+    bool      quit = false;
+
+    while (!quit) {
+        while (SDL_PollEvent(&sdlEvent)) {
+            switch (sdlEvent.type) {
+            case SDL_QUIT:
+                quit = true;
+                break;
+            case SDL_KEYDOWN:
+                // m_keyStates[sdlEvent.key.keysym.sym].pressed = true;
+                break;
+            case SDL_KEYUP:
+                // m_keyStates[sdlEvent.key.keysym.sym].pressed = false;
+                break;
+            }
+        }
+
+        Renderer::getInstance()->acquireImage();
+
+        std::chrono::high_resolution_clock::time_point newTime = std::chrono::high_resolution_clock::now();
+        uint32_t frameTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::microseconds>(newTime - oldTime).count());
+        oldTime            = newTime;
+        time += frameTime;
+
+        if (time > 500'000 || updatedUI) {
+            char title[256];
+            sprintf_s(title, "Breakout! Frametime: %.2fms", frameTime / 1'000.0f);
+            Renderer::setWindowTitle(title);
+            time      = 0;
+            updatedUI = false;
+        }
+
+        Renderer::getInstance()->renderAndPresentImage();
+    }
+
+    vkDeviceWaitIdle(Renderer::getDevice());
+}
+
 Breakout::Breakout() {
     setupRenderer();
     generateVertexAndIndexBuffers();
@@ -164,5 +209,5 @@ Breakout::Breakout() {
 void Breakout::run() {
     m_levels[0].load(VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID, m_vertexBuffer->buffer, m_indexBuffer->buffer, Renderer::getStagingBuffer(),
                      m_drawCommands, m_drawCommandsBuffer->buffer);
-    Renderer::runRenderLoop();
+    gameLoop();
 }

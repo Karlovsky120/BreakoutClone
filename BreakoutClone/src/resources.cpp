@@ -87,6 +87,7 @@ VkSampler Resources::createSampler() {
     createInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.anisotropyEnable        = VK_FALSE;
+    createInfo.maxAnisotropy           = 1.0f;
     createInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     createInfo.unnormalizedCoordinates = VK_FALSE;
     createInfo.compareEnable           = VK_FALSE;
