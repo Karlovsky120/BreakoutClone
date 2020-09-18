@@ -22,6 +22,7 @@
     <ClCompile Include="src\breakout.cpp" />
     <ClCompile Include="src\level.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\physics.cpp" />
     <ClCompile Include="src\renderer.cpp" />
     <ClCompile Include="src\resources.cpp" />
     <ClCompile Include="src\swapchain.cpp" />
@@ -30,6 +31,7 @@
     <ClInclude Include="src\breakout.h" />
     <ClInclude Include="src\common.h" />
     <ClInclude Include="src\level.h" />
+    <ClInclude Include="src\physics.h" />
     <ClInclude Include="src\renderer.h" />
     <ClInclude Include="src\resources.h" />
     <ClInclude Include="src\shaders\sharedStructures.h" />
@@ -42,6 +44,24 @@
     <CustomBuild Include="src\shaders\vertexShader.vert">
       <FileType>Document</FileType>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\textures\ball.png" />
+    <Image Include="resources\textures\boards\background1.png" />
+    <Image Include="resources\textures\bricks\brick.png" />
+    <Image Include="resources\textures\bricks\metal.png" />
+    <Image Include="resources\textures\bricks\paper.png" />
+    <Image Include="resources\textures\bricks\wood.png" />
+    <Image Include="resources\textures\pad.png" />
+    <Image Include="resources\textures\transparent.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="resources\levels\level001.xml" />
+    <Xml Include="resources\levels\level002.xml" />
+    <Xml Include="resources\levels\level003.xml" />
+    <Xml Include="resources\levels\level010.xml" />
+    <Xml Include="resources\levels\level034.xml" />
+    <Xml Include="resources\levels\level245.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

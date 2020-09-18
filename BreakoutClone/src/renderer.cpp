@@ -174,9 +174,6 @@ void Renderer::initSDL() {
     if (!m_window) {
         throw std::runtime_error("Failed to create SDL window!");
     }
-
-    SDL_CaptureMouse(static_cast<SDL_bool>(true));
-    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(true));
 }
 
 #ifdef VALIDATION_ENABLED

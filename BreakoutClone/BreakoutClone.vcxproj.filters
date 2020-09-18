@@ -16,6 +16,18 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{f94e9137-11b3-4cef-b346-f97d1a6fe316}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\levels">
+      <UniqueIdentifier>{baeef0df-bd46-4e64-b7df-e154c683eea7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\textures">
+      <UniqueIdentifier>{5ba0d9d4-8339-457e-b599-da38f72ffa66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\textures\bricks">
+      <UniqueIdentifier>{13ae55f4-2344-4c12-aaa9-7b42c7cb86d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\textures\boards">
+      <UniqueIdentifier>{b285ad12-19bd-4f11-9f0a-309ef5ce38e2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -34,6 +46,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\breakout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\physics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,6 +74,9 @@
     <ClInclude Include="src\breakout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\physics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\shaders\vertexShader.vert">
@@ -67,5 +85,51 @@
     <CustomBuild Include="src\shaders\fragmentShader.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\textures\ball.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\pad.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\transparent.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\bricks\brick.png">
+      <Filter>Resource Files\textures\bricks</Filter>
+    </Image>
+    <Image Include="resources\textures\bricks\metal.png">
+      <Filter>Resource Files\textures\bricks</Filter>
+    </Image>
+    <Image Include="resources\textures\bricks\paper.png">
+      <Filter>Resource Files\textures\bricks</Filter>
+    </Image>
+    <Image Include="resources\textures\bricks\wood.png">
+      <Filter>Resource Files\textures\bricks</Filter>
+    </Image>
+    <Image Include="resources\textures\boards\background1.png">
+      <Filter>Resource Files\textures\boards</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="resources\levels\level001.xml">
+      <Filter>Resource Files\levels</Filter>
+    </Xml>
+    <Xml Include="resources\levels\level002.xml">
+      <Filter>Resource Files\levels</Filter>
+    </Xml>
+    <Xml Include="resources\levels\level003.xml">
+      <Filter>Resource Files\levels</Filter>
+    </Xml>
+    <Xml Include="resources\levels\level010.xml">
+      <Filter>Resource Files\levels</Filter>
+    </Xml>
+    <Xml Include="resources\levels\level034.xml">
+      <Filter>Resource Files\levels</Filter>
+    </Xml>
+    <Xml Include="resources\levels\level245.xml">
+      <Filter>Resource Files\levels</Filter>
+    </Xml>
   </ItemGroup>
 </Project>
