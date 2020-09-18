@@ -14,54 +14,28 @@
 #include <array>
 #include <filesystem>
 
-void Breakout::setupRenderer() {
-    std::array<VkVertexInputBindingDescription, 2> vertexInputBindingDescriptions;
-    vertexInputBindingDescriptions[0].binding   = VERTEX_BUFFER_BIND_ID;
-    vertexInputBindingDescriptions[0].stride    = sizeof(Vertex);
-    vertexInputBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+void Breakout::run() {
+    m_levels[0].load(m_vertexBuffer.buffer, m_indexBuffer.buffer, m_drawCommands, m_drawCommandsBuffer.buffer);
+    gameLoop();
+}
 
-    vertexInputBindingDescriptions[1].binding   = INSTANCE_BUFFER_BIND_ID;
-    vertexInputBindingDescriptions[1].stride    = sizeof(Instance);
-    vertexInputBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+Breakout::Breakout() {
+    Renderer::initRenderer();
+    generateVertexAndIndexBuffers();
+    setupIndirectDrawCommands();
+    loadLevelData();
+}
 
-    std::array<VkVertexInputAttributeDescription, 5> vertexInputAttributeDescriptions;
-    // Vertex position
-    vertexInputAttributeDescriptions[0].binding  = VERTEX_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[0].location = 0;
-    vertexInputAttributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexInputAttributeDescriptions[0].offset   = 0;
+Breakout::~Breakout() {
+    m_drawCommandsBuffer.destroy();
+    m_indexBuffer.destroy();
+    m_vertexBuffer.destroy();
 
-    // Instance position
-    vertexInputAttributeDescriptions[1].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[1].location = 1;
-    vertexInputAttributeDescriptions[1].format   = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexInputAttributeDescriptions[1].offset   = 0;
+    for (Level& level : m_levels) {
+        level.destroy();
+    }
 
-    // Instance scale
-    vertexInputAttributeDescriptions[2].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[2].location = 2;
-    vertexInputAttributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT;
-    vertexInputAttributeDescriptions[2].offset   = offsetof(Instance, scale);
-
-    // Instance texture index
-    vertexInputAttributeDescriptions[3].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[3].location = 3;
-    vertexInputAttributeDescriptions[3].format   = VK_FORMAT_R32_UINT;
-    vertexInputAttributeDescriptions[3].offset   = offsetof(Instance, textureIndex);
-
-    // Instance health
-    vertexInputAttributeDescriptions[4].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[4].location = 4;
-    vertexInputAttributeDescriptions[4].format   = VK_FORMAT_R32_UINT;
-    vertexInputAttributeDescriptions[4].offset   = offsetof(Instance, health);
-
-    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-    vertexInputStateCreateInfo.pVertexBindingDescriptions           = vertexInputBindingDescriptions.data();
-    vertexInputStateCreateInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindingDescriptions.size());
-    vertexInputStateCreateInfo.pVertexAttributeDescriptions         = vertexInputAttributeDescriptions.data();
-    vertexInputStateCreateInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributeDescriptions.size());
-
-    Renderer::initRenderer("src/shaders/spirv/vertexShader.spv", "src/shaders/spirv/fragmentShader.spv", vertexInputStateCreateInfo);
+    Renderer::getInstance()->destroy();
 }
 
 void Breakout::generateVertexAndIndexBuffers() {
@@ -99,14 +73,12 @@ void Breakout::generateVertexAndIndexBuffers() {
     m_squareVertexOffset              = 0;
     uint32_t squareVertexBufferOffset = 0;
     uint32_t squareVertexBufferSize   = VECTOR_SIZE_BYTES(squareVertices);
-    Resources::uploadToDeviceLocalBuffer(squareVertices.data(), squareVertexBufferSize, Renderer::getStagingBuffer(), m_vertexBuffer->buffer,
-                                         squareVertexBufferOffset);
+    Resources::uploadToDeviceLocalBuffer(squareVertices.data(), squareVertexBufferSize, m_vertexBuffer.buffer, squareVertexBufferOffset);
 
     m_circleVertexOffset              = m_squareVertexOffset + static_cast<uint32_t>(squareVertices.size());
     uint32_t circleVertexBufferOffset = m_squareVertexOffset + VECTOR_SIZE_BYTES(squareVertices);
     uint32_t circleVertexBufferSize   = VECTOR_SIZE_BYTES(circleVertices);
-    Resources::uploadToDeviceLocalBuffer(circleVertices.data(), circleVertexBufferSize, Renderer::getStagingBuffer(), m_vertexBuffer->buffer,
-                                         circleVertexBufferOffset);
+    Resources::uploadToDeviceLocalBuffer(circleVertices.data(), circleVertexBufferSize, m_vertexBuffer.buffer, circleVertexBufferOffset);
 
     uint32_t indexBufferSize = sizeof(uint16_t) * (static_cast<uint32_t>(squareIndices.size() + circleIndices.size()));
     m_indexBuffer =
@@ -115,14 +87,12 @@ void Breakout::generateVertexAndIndexBuffers() {
     m_squareIndexOffset              = 0;
     uint32_t squareIndexBufferOffset = 0;
     uint32_t squareIndexBuffferSize  = VECTOR_SIZE_BYTES(squareIndices);
-    Resources::uploadToDeviceLocalBuffer(squareIndices.data(), squareIndexBuffferSize, Renderer::getStagingBuffer(), m_indexBuffer->buffer,
-                                         squareIndexBufferOffset);
+    Resources::uploadToDeviceLocalBuffer(squareIndices.data(), squareIndexBuffferSize, m_indexBuffer.buffer, squareIndexBufferOffset);
 
     m_circleIndexOffset              = m_squareIndexOffset + static_cast<uint32_t>(squareIndices.size());
     uint32_t circleIndexBufferOffset = m_squareIndexOffset + VECTOR_SIZE_BYTES(squareIndices);
     uint32_t circleIndexBufferSize   = VECTOR_SIZE_BYTES(circleIndices);
-    Resources::uploadToDeviceLocalBuffer(circleIndices.data(), circleIndexBufferSize, Renderer::getStagingBuffer(), m_indexBuffer->buffer,
-                                         circleIndexBufferOffset);
+    Resources::uploadToDeviceLocalBuffer(circleIndices.data(), circleIndexBufferSize, m_indexBuffer.buffer, circleIndexBufferOffset);
 }
 
 void Breakout::loadLevelData() {
@@ -197,17 +167,4 @@ void Breakout::gameLoop() {
     }
 
     vkDeviceWaitIdle(Renderer::getDevice());
-}
-
-Breakout::Breakout() {
-    setupRenderer();
-    generateVertexAndIndexBuffers();
-    setupIndirectDrawCommands();
-    loadLevelData();
-}
-
-void Breakout::run() {
-    m_levels[0].load(VERTEX_BUFFER_BIND_ID, INSTANCE_BUFFER_BIND_ID, m_vertexBuffer->buffer, m_indexBuffer->buffer, Renderer::getStagingBuffer(),
-                     m_drawCommands, m_drawCommandsBuffer->buffer);
-    gameLoop();
 }

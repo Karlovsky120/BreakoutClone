@@ -8,8 +8,7 @@
 
 Renderer::Renderer() {}
 
-void Renderer::init(const char* vertexShaderPath, const char* fragmentShaderPath,
-                    const VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo) {
+void Renderer::init() {
     initSDL();
 
     VK_CHECK(volkInitialize());
@@ -41,11 +40,13 @@ void Renderer::init(const char* vertexShaderPath, const char* fragmentShaderPath
     createRenderPass();
     createFramebuffers();
 
+    m_sampler = Resources::createSampler();
+
     createDescriptorLayout();
 
     createPipelineCache();
     createPipelineLayout();
-    createGraphicsPipeline(vertexShaderPath, fragmentShaderPath, pipelineVertexInputStateCreateInfo);
+    createGraphicsPipeline();
 
     createDescriptorPool();
     allocateDescriptorSet();
@@ -58,7 +59,7 @@ void Renderer::init(const char* vertexShaderPath, const char* fragmentShaderPath
     setupRenderLoop();
 }
 
-Renderer::~Renderer() {
+void Renderer::destroy() {
     if (m_device != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(m_device);
     }
@@ -75,9 +76,7 @@ Renderer::~Renderer() {
         vkDestroyFence(m_device, fence, nullptr);
     }
 
-    for (size_t i = 0; i < m_swapchainImageCount; ++i) {
-        vkFreeCommandBuffers(m_device, m_renderCommandPool, m_swapchainImageCount, m_renderCommandBuffers.data());
-    }
+    vkFreeCommandBuffers(m_device, m_renderCommandPool, m_swapchainImageCount, m_renderCommandBuffers.data());
 
     vkDestroyCommandPool(m_device, m_renderCommandPool, nullptr);
     vkDestroyCommandPool(m_device, m_transferCommandPool, nullptr);
@@ -86,13 +85,20 @@ Renderer::~Renderer() {
     vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
     vkDestroyPipelineCache(m_device, m_pipelineCache, nullptr);
 
+    vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+
+    vkDestroySampler(m_device, m_sampler, nullptr);
+
     for (VkFramebuffer& framebuffer : m_framebuffers) {
         vkDestroyFramebuffer(m_device, framebuffer, nullptr);
     }
 
     vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
-    m_depthImage.reset();
+    m_stagingBuffer.destroy();
+    m_uniformBuffer.destroy();
+    m_depthImage.destroy();
     m_swapchain.reset();
 
     vkDestroyDevice(m_device, nullptr);
@@ -109,23 +115,22 @@ Renderer::~Renderer() {
     SDL_Quit();
 }
 
-Renderer* Renderer::m_object_instance;
-Renderer* Renderer::getInstance() { return m_object_instance; }
+Renderer* Renderer::m_renderer;
+Renderer* Renderer::getInstance() { return m_renderer; }
 
-void Renderer::initRenderer(const char* vertexShaderPath, const char* fragmentShaderPath,
-                            const VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo) {
-    m_object_instance = new Renderer();
-    m_object_instance->init(vertexShaderPath, fragmentShaderPath, pipelineVertexInputStateCreateInfo);
+void Renderer::initRenderer() {
+    m_renderer = new Renderer();
+    m_renderer->init();
 }
 
-const VkDevice&                         Renderer::getDevice() { return m_object_instance->m_device; };
-const VkPhysicalDeviceProperties&       Renderer::getDeviceProperties() { return m_object_instance->m_physicalDeviceProperties; };
-const VkPhysicalDeviceMemoryProperties& Renderer::getMemoryProperties() { return m_object_instance->m_physicalDeviceMemoryProperties; };
-const VkCommandPool&                    Renderer::getTransferCommandPool() { return m_object_instance->m_transferCommandPool; };
-const Buffer&                           Renderer::getStagingBuffer() { return *(m_object_instance->m_stagingBuffer); }
-const VkQueue&                          Renderer::getQueue() { return m_object_instance->m_queue; }
+const VkDevice&                         Renderer::getDevice() { return m_renderer->m_device; };
+const VkPhysicalDeviceProperties&       Renderer::getDeviceProperties() { return m_renderer->m_physicalDeviceProperties; };
+const VkPhysicalDeviceMemoryProperties& Renderer::getMemoryProperties() { return m_renderer->m_physicalDeviceMemoryProperties; };
+const VkCommandPool&                    Renderer::getTransferCommandPool() { return m_renderer->m_transferCommandPool; };
+const Buffer&                           Renderer::getStagingBuffer() { return m_renderer->m_stagingBuffer; }
+const VkQueue&                          Renderer::getQueue() { return m_renderer->m_queue; }
 
-void Renderer::setWindowTitle(const char* title) { SDL_SetWindowTitle(m_object_instance->m_window, title); }
+void Renderer::setWindowTitle(const char* title) { SDL_SetWindowTitle(m_renderer->m_window, title); }
 
 void Renderer::acquireImage() {
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
@@ -153,10 +158,10 @@ void Renderer::renderAndPresentImage() {
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
-                                          const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId, const VkBuffer& drawCommandBuffer) {
+void Renderer::recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
+                                          const VkBuffer& drawCommandBuffer) {
     for (uint32_t i = 0; i < getInstance()->m_swapchainImageCount; ++i) {
-        getInstance()->recordRenderCommandBuffer(i, vertexBuffer, vertexBufferBindId, indexBuffer, instanceBuffer, instanceBufferBindId, drawCommandBuffer);
+        getInstance()->recordRenderCommandBuffer(i, vertexBuffer, indexBuffer, instanceBuffer, drawCommandBuffer);
     }
 }
 
@@ -292,8 +297,9 @@ void Renderer::createDevice() {
     createInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    VkPhysicalDeviceFeatures2 physicalDeviceFeatures2  = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    physicalDeviceFeatures2.features.multiDrawIndirect = VK_TRUE;
+    VkPhysicalDeviceFeatures2 physicalDeviceFeatures2                       = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    physicalDeviceFeatures2.features.multiDrawIndirect                      = VK_TRUE;
+    physicalDeviceFeatures2.features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 
     createInfo.pNext = &physicalDeviceFeatures2;
 
@@ -349,7 +355,7 @@ void Renderer::createFramebuffers() {
 
     m_framebuffers = std::vector<VkFramebuffer>(m_swapchainImageCount);
     std::array<VkImageView, 2> attachments({});
-    attachments[1] = m_depthImage->view;
+    attachments[1] = m_depthImage.view;
 
     const std::vector<VkImageView>& swapchainImageViews = m_swapchain->getImageViews();
     for (size_t i = 0; i < m_swapchainImageCount; ++i) {
@@ -360,13 +366,22 @@ void Renderer::createFramebuffers() {
 }
 
 void Renderer::createDescriptorLayout() {
-    std::array<VkDescriptorSetLayoutBinding, 1> descriptorSetLayoutBindings;
+    std::array<VkDescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings;
 
     // Uniform buffer
-    descriptorSetLayoutBindings[0].binding         = 0;
-    descriptorSetLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descriptorSetLayoutBindings[0].descriptorCount = 1;
-    descriptorSetLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
+    descriptorSetLayoutBindings[0].binding            = 0;
+    descriptorSetLayoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descriptorSetLayoutBindings[0].descriptorCount    = 1;
+    descriptorSetLayoutBindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+    descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
+
+    // Sampled texture array
+    std::vector<VkSampler> samplers(MAX_TEXTURE_COUNT, m_sampler);
+    descriptorSetLayoutBindings[1].binding            = 1;
+    descriptorSetLayoutBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorSetLayoutBindings[1].descriptorCount    = static_cast<uint32_t>(samplers.size());
+    descriptorSetLayoutBindings[1].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+    descriptorSetLayoutBindings[1].pImmutableSamplers = samplers.data();
 
     VkDescriptorSetLayoutCreateInfo createInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     createInfo.bindingCount                    = static_cast<uint32_t>(descriptorSetLayoutBindings.size());
@@ -390,15 +405,14 @@ void Renderer::createPipelineLayout() {
     VK_CHECK(vkCreatePipelineLayout(m_device, &createInfo, nullptr, &m_pipelineLayout));
 }
 
-void Renderer::createGraphicsPipeline(const char* vertexShaderPath, const char* fragmentShaderPath,
-                                      const VkPipelineVertexInputStateCreateInfo& vertexInputStateCreateInfo) {
+void Renderer::createGraphicsPipeline() {
     VkGraphicsPipelineCreateInfo createInfo = {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
 
     std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
     shaderStages.fill({VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO});
 
-    VkShaderModule vertexShader   = loadShader(vertexShaderPath);
-    VkShaderModule fragmentShader = loadShader(fragmentShaderPath);
+    VkShaderModule vertexShader   = loadShader("src/shaders/spirv/vertexShader.spv");
+    VkShaderModule fragmentShader = loadShader("src/shaders/spirv/fragmentShader.spv");
 
     shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
     shaderStages[0].module = vertexShader;
@@ -410,6 +424,73 @@ void Renderer::createGraphicsPipeline(const char* vertexShaderPath, const char* 
 
     createInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     createInfo.pStages    = shaderStages.data();
+
+    std::array<VkVertexInputBindingDescription, 2> vertexInputBindingDescriptions;
+    vertexInputBindingDescriptions[0].binding   = VERTEX_BUFFER_BIND_ID;
+    vertexInputBindingDescriptions[0].stride    = sizeof(Vertex);
+    vertexInputBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    vertexInputBindingDescriptions[1].binding   = INSTANCE_BUFFER_BIND_ID;
+    vertexInputBindingDescriptions[1].stride    = sizeof(Instance);
+    vertexInputBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+
+    std::array<VkVertexInputAttributeDescription, 7> vertexInputAttributeDescriptions;
+    uint32_t                                         inputAttributeIndex = 0;
+
+    // Vertex position
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = VERTEX_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 0;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = 0;
+    ++inputAttributeIndex;
+
+    // Instance position
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 1;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = 0;
+    ++inputAttributeIndex;
+
+    // Instance scale
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 2;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, scale);
+    ++inputAttributeIndex;
+
+    // Instance texture index
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 3;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_SINT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, textureIndex);
+    ++inputAttributeIndex;
+
+    // UV offset
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 4;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, uvOffset);
+    ++inputAttributeIndex;
+
+    // UV scale
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 5;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, uvScale);
+    ++inputAttributeIndex;
+
+    // Instance health
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 6;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_UINT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, health);
+    ++inputAttributeIndex;
+
+    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+    vertexInputStateCreateInfo.pVertexBindingDescriptions           = vertexInputBindingDescriptions.data();
+    vertexInputStateCreateInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindingDescriptions.size());
+    vertexInputStateCreateInfo.pVertexAttributeDescriptions         = vertexInputAttributeDescriptions.data();
+    vertexInputStateCreateInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributeDescriptions.size());
 
     createInfo.pVertexInputState = &vertexInputStateCreateInfo;
 
@@ -453,7 +534,14 @@ void Renderer::createGraphicsPipeline(const char* vertexShaderPath, const char* 
     createInfo.pDepthStencilState                                     = &depthStencilStateCreateInfo;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
-    colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachmentState.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachmentState.blendEnable         = VK_TRUE;
+    colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
+    colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachmentState.alphaBlendOp        = VK_BLEND_OP_SUBTRACT;
 
     VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
     colorBlendStateCreateInfo.attachmentCount                     = 1;
@@ -494,24 +582,26 @@ void Renderer::createUniformBuffer() {
 
     UniformData uniformData = {1.0f / WINDOW_WIDTH, 1.0f / WINDOW_HEIGHT};
 
-    Resources::uploadToDeviceLocalBuffer(&uniformData, sizeof(uniformData), *m_stagingBuffer, m_uniformBuffer->buffer);
+    Resources::uploadToDeviceLocalBuffer(&uniformData, sizeof(uniformData), m_uniformBuffer.buffer);
 }
 
 void Renderer::writeDescriptorSet() {
-    VkDescriptorBufferInfo descriptorBufferInfo;
-    descriptorBufferInfo.buffer = m_uniformBuffer->buffer;
-    descriptorBufferInfo.offset = 0;
-    descriptorBufferInfo.range  = sizeof(UniformData);
+    VkDescriptorBufferInfo descriptorBufferInfo = {};
+    descriptorBufferInfo.buffer                 = m_uniformBuffer.buffer;
+    descriptorBufferInfo.offset                 = 0;
+    descriptorBufferInfo.range                  = sizeof(UniformData);
 
-    VkWriteDescriptorSet writeDescriptorSet = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    // Uniform buffer
+    std::array<VkWriteDescriptorSet, 1> writeDescriptorSets;
+    writeDescriptorSets[0]                 = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    writeDescriptorSets[0].dstBinding      = 0;
+    writeDescriptorSets[0].dstArrayElement = 0;
+    writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptorSets[0].descriptorCount = 1;
+    writeDescriptorSets[0].pBufferInfo     = &descriptorBufferInfo;
+    writeDescriptorSets[0].dstSet          = m_descriptorSet;
 
-    writeDescriptorSet.dstBinding      = 0;
-    writeDescriptorSet.dstArrayElement = 0;
-    writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.pBufferInfo     = &descriptorBufferInfo;
-    writeDescriptorSet.dstSet          = m_descriptorSet;
-    vkUpdateDescriptorSets(m_device, 1, &writeDescriptorSet, 0, nullptr);
+    vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 }
 
 void Renderer::createRenderCommandPoolsAndAllocateBuffers() {
@@ -549,8 +639,28 @@ void Renderer::createSyncObjects() {
     }
 }
 
-void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId,
-                                         const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId,
+void Renderer::updateTextureArray(std::vector<Image>& textures) {
+    VkDescriptorImageInfo descriptorImageInfo;
+    descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    std::vector<VkDescriptorImageInfo> descriptorImageInfos;
+    for (const Image& texture : textures) {
+        descriptorImageInfo.imageView = texture.view;
+        descriptorImageInfos.push_back(descriptorImageInfo);
+    }
+
+    VkWriteDescriptorSet writeDescriptorSet = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    writeDescriptorSet.dstBinding           = 1;
+    writeDescriptorSet.dstArrayElement      = 0;
+    writeDescriptorSet.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writeDescriptorSet.descriptorCount      = static_cast<uint32_t>(textures.size());
+    writeDescriptorSet.pImageInfo           = descriptorImageInfos.data();
+    writeDescriptorSet.dstSet               = m_renderer->m_descriptorSet;
+
+    vkUpdateDescriptorSets(m_renderer->m_device, 1, &writeDescriptorSet, 0, nullptr);
+}
+
+void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
                                          const VkBuffer& drawCommandBuffer) const {
     VkCommandBufferBeginInfo commandBufferBeginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 
@@ -573,8 +683,8 @@ void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuf
     vkCmdBindDescriptorSets(m_renderCommandBuffers[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
 
     VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], vertexBufferBindId, 1, &vertexBuffer, &offset);
-    vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], instanceBufferBindId, 1, &instanceBuffer, &offset);
+    vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], VERTEX_BUFFER_BIND_ID, 1, &vertexBuffer, &offset);
+    vkCmdBindVertexBuffers(m_renderCommandBuffers[frameIndex], INSTANCE_BUFFER_BIND_ID, 1, &instanceBuffer, &offset);
 
     vkCmdBindIndexBuffer(m_renderCommandBuffers[frameIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 

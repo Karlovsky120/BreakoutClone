@@ -11,6 +11,7 @@
 #define vec3 glm::vec3
 #define vec2 glm::vec2
 #define uint uint32_t
+#define int int32_t
 #endif
 
 struct Vertex {
@@ -19,8 +20,10 @@ struct Vertex {
 
 struct Instance {
     vec3 position;
+    int  textureIndex;
     vec2 scale;
-    uint textureIndex;
+    vec2 uvOffset;
+    vec2 uvScale;
     uint health;
 };
 
@@ -30,6 +33,7 @@ struct UniformData {
 };
 
 #ifdef CPP_SHADER_STRUCTURE
+#undef int
 #undef uint
 #undef vec2
 #undef vec3

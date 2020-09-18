@@ -3,7 +3,7 @@
 	ColumnCount="20"
 	RowSpacing="3"
 	ColumnSpacing="3"
-	BackgroundTexture="Textures/Boards/Board_01.dds">
+	BackgroundTexture="resources/textures/background1.jpg">
 	
 	<BrickTypes>
 

@@ -2,22 +2,12 @@
 
 #include "level.h"
 
-#define PI 3.1415926535897932384f
-
-#define BALL_INDEX        0
-#define LEFT_WALL_INDEX   1
-#define RIGHT_WALL_INDEX  2
-#define PAD_INDEX         3
-#define BRICK_START_INDEX 4
-
-#define VERTEX_BUFFER_BIND_ID   0
-#define INSTANCE_BUFFER_BIND_ID 1
-
 class Breakout {
   public:
-    Breakout();
-
     void run();
+
+    Breakout();
+    ~Breakout();
 
   private:
     uint32_t m_squareVertexOffset;
@@ -34,11 +24,10 @@ class Breakout {
 
     std::array<VkDrawIndexedIndirectCommand, 2> m_drawCommands;
 
-    std::unique_ptr<Buffer> m_vertexBuffer;
-    std::unique_ptr<Buffer> m_indexBuffer;
-    std::unique_ptr<Buffer> m_drawCommandsBuffer;
+    Buffer m_vertexBuffer;
+    Buffer m_indexBuffer;
+    Buffer m_drawCommandsBuffer;
 
-    void setupRenderer();
     void generateVertexAndIndexBuffers();
     void loadLevelData();
     void setupIndirectDrawCommands();

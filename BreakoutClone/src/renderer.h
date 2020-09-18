@@ -20,10 +20,17 @@
 #define VERBOSE  0
 #define INFO     0
 
-#define WINDOW_WIDTH  1280
-#define WINDOW_HEIGHT 720
+#define WINDOW_WIDTH  1920
+#define WINDOW_HEIGHT 1080
+
+#define PI 3.1415926535897932384f
+
+#define VERTEX_BUFFER_BIND_ID   0
+#define INSTANCE_BUFFER_BIND_ID 1
 
 #define MAX_FRAMES_IN_FLIGHT 2
+
+#define MAX_TEXTURE_COUNT 16
 
 #define STAGING_BUFFER_SIZE 33'554'432 // 32MB
 
@@ -31,8 +38,7 @@ class Renderer {
   public:
     static Renderer* getInstance();
 
-    static void initRenderer(const char* vertexShaderPath, const char* fragmentShaderPath,
-                             const VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo);
+    static void initRenderer();
 
     static const VkDevice&                         getDevice();
     static const VkPhysicalDeviceProperties&       getDeviceProperties();
@@ -45,10 +51,11 @@ class Renderer {
     void        acquireImage();
     void        renderAndPresentImage();
 
-    static void recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
-                                           const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId, const VkBuffer& drawCommandBuffer);
+    static void recordRenderCommandBuffers(const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
+                                           const VkBuffer& drawCommandBuffer);
+    static void updateTextureArray(std::vector<Image>& textures);
 
-    ~Renderer();
+    void destroy();
 
     Renderer(Renderer const&) = delete;
     void operator=(Renderer const&) = delete;
@@ -62,6 +69,7 @@ class Renderer {
     VkDevice              m_device              = VK_NULL_HANDLE;
     VkQueue               m_queue               = VK_NULL_HANDLE;
     VkRenderPass          m_renderPass          = VK_NULL_HANDLE;
+    VkSampler             m_sampler             = VK_NULL_HANDLE;
     VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool      m_descriptorPool      = VK_NULL_HANDLE;
     VkDescriptorSet       m_descriptorSet       = VK_NULL_HANDLE;
@@ -75,9 +83,9 @@ class Renderer {
     VkDebugUtilsMessengerEXT m_debugUtilsMessenger = VK_NULL_HANDLE;
 #endif
 
-    std::unique_ptr<Buffer>    m_stagingBuffer;
-    std::unique_ptr<Buffer>    m_uniformBuffer;
-    std::unique_ptr<Image>     m_depthImage;
+    Buffer                     m_stagingBuffer;
+    Buffer                     m_uniformBuffer;
+    Image                      m_depthImage;
     std::unique_ptr<Swapchain> m_swapchain;
 
     VkExtent2D                       m_surfaceExtent                  = {};
@@ -100,7 +108,7 @@ class Renderer {
 
     VkPipelineStageFlags m_renderSubmitWaitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
-    void init(const char* vertexShaderPath, const char* fragmentShaderPath, const VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo);
+    void init();
     void initSDL();
 #ifdef VALIDATION_ENABLED
     void setupDebugUtils();
@@ -113,8 +121,7 @@ class Renderer {
     void createDescriptorLayout();
     void createPipelineCache();
     void createPipelineLayout();
-    void createGraphicsPipeline(const char* vertexShaderPath, const char* fragmentShaderPath,
-                                const VkPipelineVertexInputStateCreateInfo& vertexInputStateCreateInfo);
+    void createGraphicsPipeline();
     void createDescriptorPool();
     void allocateDescriptorSet();
     void createUniformBuffer();
@@ -122,8 +129,8 @@ class Renderer {
     void createRenderCommandPoolsAndAllocateBuffers();
     void createSyncObjects();
     void setupRenderLoop();
-    void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const uint32_t& vertexBufferBindId, const VkBuffer& indexBuffer,
-                                   const VkBuffer& instanceBuffer, const uint32_t& instanceBufferBindId, const VkBuffer& drawCommandBuffer) const;
+    void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& vertexBuffer, const VkBuffer& indexBuffer, const VkBuffer& instanceBuffer,
+                                   const VkBuffer& drawCommandBuffer) const;
 
     const uint32_t       getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const;
     const VkShaderModule loadShader(const char* pathToSource) const;
@@ -136,5 +143,5 @@ class Renderer {
 
     Renderer();
 
-    static Renderer* m_object_instance;
+    static Renderer* m_renderer;
 };
