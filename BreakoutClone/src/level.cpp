@@ -14,10 +14,6 @@
 #pragma warning(disable : 26495) // Variable * is uninitialized.Always initialize a member variable.
 #pragma warning(disable : 28182) // Dereferencing NULL pointer '*' contains the same NULL value as '*'.
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_XYZW_ONLY
-#include "glm/vec2.hpp"
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -37,15 +33,12 @@
 #pragma warning(enable : 6011)
 #pragma warning(pop)
 
+#include "common.h"
+
 #include <algorithm>
 #include <filesystem>
 #include <sstream>
-#include <stdexcept>
 #include <string>
-
-const uint32_t         Level::getBrickCount() const { return m_brickCount; }
-const uint32_t         Level::getForegroundIndex() const { return m_foregroundIndex; };
-std::vector<Instance>& Level::getInstances() { return m_instances; };
 
 void Level::load() {
 

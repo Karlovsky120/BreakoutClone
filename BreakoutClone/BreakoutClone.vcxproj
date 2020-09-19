@@ -30,6 +30,7 @@
   <ItemGroup>
     <ClInclude Include="src\breakout.h" />
     <ClInclude Include="src\common.h" />
+    <ClInclude Include="src\commonExternal.h" />
     <ClInclude Include="src\level.h" />
     <ClInclude Include="src\physics.h" />
     <ClInclude Include="src\renderer.h" />

@@ -1,10 +1,5 @@
 #include "physics.h"
-
-#pragma warning(push, 0)
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_XYZW_ONLY
-#include "glm/glm.hpp"
-#pragma warning(pop)
+#include "level.h"
 
 #define MILISECONDS(microseconds) (microseconds * 0.001f)
 #define SECONDS(microseconds)     (microseconds * 0.000001f)
@@ -12,17 +7,17 @@
 #define CROSS2D(first, second) ((first).x * (second).y - (first).y * (second).x)
 #define SIGNUM(x)              ((x > 0.0) - (x < 0.0))
 
-void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, std::vector<Instance>& instances, const float& ballSpeed /*pixels per microsecond*/,
+void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeed /*pixels per microsecond*/,
                            const float& padSpeed /*pixels per microsecond*/, glm::vec2& ballDirection) {
 
-    Instance& ball = instances[BALL_INDEX];
+    Instance& ball = level.m_instances[BALL_INDEX];
 
-    Instance& pad       = instances[PAD_INDEX];
-    Instance& leftWall  = instances[LEFT_WALL_INDEX];
-    Instance& rightWall = instances[RIGHT_WALL_INDEX];
-    Instance& topWall   = instances[TOP_WALL_INDEX];
+    Instance& pad       = level.m_instances[PAD_INDEX];
+    Instance& leftWall  = level.m_instances[LEFT_WALL_INDEX];
+    Instance& rightWall = level.m_instances[RIGHT_WALL_INDEX];
+    Instance& topWall   = level.m_instances[TOP_WALL_INDEX];
 
-    Instance* bricks = instances.data() + BRICK_START_INDEX;
+    Instance* bricks = level.m_instances.data() + BRICK_START_INDEX;
 
     // Move the pad as much as the ball and walls allow
     if (padSpeed != 0.0) {

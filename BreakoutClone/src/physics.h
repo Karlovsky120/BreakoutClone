@@ -1,15 +1,14 @@
 #pragma once
 
 #include "common.h"
+#include "commonExternal.h"
 
-#include "level.h"
-
-#include <vector>
+class Level;
 
 class Physics {
   public:
-    static void resolveFrame(const uint32_t& frameTime /*microseconds*/, std::vector<Instance>& instances, const float& ballSpeed /*pixels per microsecond*/,
-                             const float& padSpeedX /*pixels per microsecond*/, glm::vec2& ballDirection);
+    static void resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeed /*pixels per microsecond*/,
+                             const float& padSpeed /*pixels per microsecond*/, glm::vec2& ballDirection);
 
   private:
     static bool detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t);

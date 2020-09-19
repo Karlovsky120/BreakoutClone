@@ -2,8 +2,6 @@
 
 #include "common.h"
 
-#include <stdexcept>
-
 // For some reason, someone thought that line
 // #define main SDL_main
 // was a good idea

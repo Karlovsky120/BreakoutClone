@@ -6,13 +6,8 @@
 #include "resources.h"
 #include "sharedStructures.h"
 
-#pragma warning(push, 0)
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_XYZW_ONLY
-#include "glm/gtx/rotate_vector.hpp"
-#pragma warning(pop)
+#include "common.h"
 
-#include <array>
 #include <filesystem>
 
 void Breakout::run() {
@@ -85,7 +80,7 @@ void Breakout::gameLoop() {
             padSpeed = 0.001f;
         }
 
-        Physics::resolveFrame(frameTime, m_levels[0].getInstances(), ballSpeed, padSpeed, ballDirection);
+        Physics::resolveFrame(frameTime, m_levels[0], ballSpeed, padSpeed, ballDirection);
         m_levels[0].updateGPUData();
 
         if (m_time > 500'000) {

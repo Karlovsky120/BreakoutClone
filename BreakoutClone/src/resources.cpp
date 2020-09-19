@@ -2,8 +2,6 @@
 
 #include "renderer.h"
 
-#include <stdexcept>
-
 const Image Resources::createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat,
                                    const VkImageAspectFlags& aspectMask) {
 

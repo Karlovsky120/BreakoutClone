@@ -1,17 +1,10 @@
 #pragma once
-
-#include "common.h"
+#include "physics.h"
 #include "resources.h"
 #include "sharedStructures.h"
 
-#pragma warning(push, 0)
-#define VK_ENABLE_BETA_EXTENSIONS
-#include "volk.h"
-#pragma warning(pop)
-
-#include <array>
-#include <map>
-#include <vector>
+#include "common.h"
+#include "commonExternal.h"
 
 #define MAX_COLUMN_COUNT 35
 #define MAX_ROW_COUNT    30
@@ -43,14 +36,13 @@ struct BrickType {
 
 class Level {
   public:
-    const uint32_t         getBrickCount() const;
-    const uint32_t         getForegroundIndex() const;
-    std::vector<Instance>& getInstances();
-
     void load();
     void updateGPUData() const;
     Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight);
     void destroy();
+
+    friend static void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeed /*pixels per microsecond*/,
+                                             const float& padSpeed /*pixels per microsecond*/, glm::vec2& ballDirection);
 
   private:
     std::string m_backgroundTexturePath;
@@ -74,6 +66,8 @@ class Level {
     uint32_t m_ballTextureId;
     uint32_t m_backgroundTextureId;
     uint32_t m_backgroundTextureSmallId;
+
+    float m_padSpeed;
 
     std::vector<Instance>              m_instances;
     std::vector<std::vector<uint32_t>> m_levelLayout;

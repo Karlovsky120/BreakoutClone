@@ -1,15 +1,8 @@
 #pragma once
-
 #include "common.h"
+#include "commonExternal.h"
 
-#pragma warning(push, 0)
-#define VK_ENABLE_BETA_EXTENSIONS
-#include "volk.h"
-#pragma warning(pop)
-
-#include <vector>
-
-#define FRAMERATE_CAPPED 1
+#define FRAMERATE_CAPPED 0
 
 struct SDL_Window;
 

@@ -1,12 +1,5 @@
 #include "swapchain.h"
 
-#pragma warning(push, 0)
-#include "SDL.h"
-#include "SDL_vulkan.h"
-#pragma warning(pop)
-
-#include <stdexcept>
-
 VkExtent2D Swapchain::update() {
     for (VkImageView& imageView : m_swapchainImageViews) {
         vkDestroyImageView(m_device, imageView, nullptr);

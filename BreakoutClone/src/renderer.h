@@ -1,20 +1,11 @@
 #pragma once
-
-#include "common.h"
-
 #include "resources.h"
 #include "swapchain.h"
 
-#pragma warning(push, 0)
-#define VK_ENABLE_BETA_EXTENSIONS
-#include "volk.h"
-
-#include "SDL.h"
-#include "SDL_vulkan.h"
-#pragma warning(pop)
+#include "common.h"
+#include "commonExternal.h"
 
 #include <memory>
-#include <vector>
 
 #define API_DUMP 0
 #define VERBOSE  0

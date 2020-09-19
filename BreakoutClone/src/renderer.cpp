@@ -2,9 +2,9 @@
 
 #include "sharedStructures.h"
 
-#include <array>
+#include "common.h"
+
 #include <chrono>
-#include <stdexcept>
 
 Renderer::Renderer() {}
 

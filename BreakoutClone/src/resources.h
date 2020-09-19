@@ -1,13 +1,6 @@
 #pragma once
-
 #include "common.h"
-
-#pragma warning(push, 0)
-#define VK_ENABLE_BETA_EXTENSIONS
-#include "volk.h"
-#pragma warning(pop)
-
-#include <memory>
+#include "commonExternal.h"
 
 struct Buffer {
     VkBuffer       buffer = VK_NULL_HANDLE;
