@@ -87,15 +87,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="resources\textures\ball.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="resources\textures\pad.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="resources\textures\transparent.png">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="resources\textures\bricks\brick.png">
       <Filter>Resource Files\textures\bricks</Filter>
     </Image>
@@ -110,6 +101,15 @@
     </Image>
     <Image Include="resources\textures\boards\background1.png">
       <Filter>Resource Files\textures\boards</Filter>
+    </Image>
+    <Image Include="resources\textures\ball.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="resources\textures\pad.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="resources\textures\transparent.png">
+      <Filter>Resource Files\textures</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

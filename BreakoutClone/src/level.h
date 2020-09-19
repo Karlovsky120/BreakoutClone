@@ -22,10 +22,12 @@
 #define BACKGROUND_INDEX  0
 #define LEFT_WALL_INDEX   1
 #define RIGHT_WALL_INDEX  2
-#define PAD_INDEX         3
-#define BALL_INDEX        4
-#define BRICK_START_INDEX 5
+#define TOP_WALL_INDEX    3
+#define PAD_INDEX         4
+#define BALL_INDEX        5
+#define BRICK_START_INDEX 6
 
+#define FOREGROUND_DEPTH 0.1f
 #define GAME_DEPTH       0.5f
 #define BACKGROUND_DEPTH 0.9f
 
@@ -42,6 +44,7 @@ struct BrickType {
 class Level {
   public:
     const uint32_t getBrickCount() const;
+    const uint32_t getForegroundIndex() const;
     void           load();
     Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight);
     void destroy();
@@ -60,7 +63,9 @@ class Level {
     uint32_t m_windowWidth  = 0;
     uint32_t m_windowHeight = 0;
 
-    uint32_t m_transparentTextureId;
+    uint32_t m_foregroundIndex = 0;
+
+    uint32_t m_transparentTextureId = 0;
 
     uint32_t m_padTextureId;
     uint32_t m_ballTextureId;

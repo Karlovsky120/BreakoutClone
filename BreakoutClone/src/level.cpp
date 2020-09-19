@@ -12,6 +12,7 @@
 #pragma warning(disable : 6385)  // Reading invalid data from '*': the readable size is '*' bytes, but '*' bytes may be read.
 #pragma warning(disable : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value.
 #pragma warning(disable : 26495) // Variable * is uninitialized.Always initialize a member variable.
+#pragma warning(disable : 28182) // Dereferencing NULL pointer '*' contains the same NULL value as '*'.
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -21,6 +22,8 @@
 
 #include "tinyxml2.cpp"
 #include "tinyxml2.h"
+
+#pragma warning(enable : 28182)
 #pragma warning(enable : 26495)
 #pragma warning(enable : 26451)
 #pragma warning(enable : 6385)
@@ -37,6 +40,7 @@
 #include <string>
 
 const uint32_t Level::getBrickCount() const { return m_brickCount; }
+const uint32_t Level::getForegroundIndex() const { return m_foregroundIndex; };
 
 void Level::load() {
 
@@ -176,7 +180,7 @@ void Level::generateRenderData() {
     float padOffset = m_windowHeight - MAX_ROW_SPACING * 2.0f;
 
 #pragma warning(suppress : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value
-    m_instances = std::vector<Instance>(BRICK_START_INDEX + m_brickCount);
+    m_instances = std::vector<Instance>(BRICK_START_INDEX + m_brickCount + 1);
 
     // Background
     m_instances[BACKGROUND_INDEX].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f, BACKGROUND_DEPTH};
@@ -201,6 +205,14 @@ void Level::generateRenderData() {
     m_instances[RIGHT_WALL_INDEX].uvOffset     = {m_windowWidth - wallWidth / static_cast<float>(m_windowWidth), 0.0f};
     m_instances[RIGHT_WALL_INDEX].uvScale      = {wallWidth / static_cast<float>(m_windowWidth), 1.0f};
     m_instances[RIGHT_WALL_INDEX].health       = UINT32_MAX;
+
+    // Top wall
+    m_instances[TOP_WALL_INDEX].position     = {m_windowWidth * 0.5f, 0.0f, GAME_DEPTH};
+    m_instances[TOP_WALL_INDEX].scale        = {m_windowWidth, 0.0f};
+    m_instances[TOP_WALL_INDEX].textureIndex = 0;
+    m_instances[TOP_WALL_INDEX].uvOffset     = {0.0f, 0.0f};
+    m_instances[TOP_WALL_INDEX].uvScale      = {1.0f, 1.0f};
+    m_instances[TOP_WALL_INDEX].health       = UINT32_MAX;
 
     // The pad
     m_instances[PAD_INDEX].position     = {wallWidth + playAreaWidth * 0.5f, padOffset, GAME_DEPTH};
@@ -229,7 +241,7 @@ void Level::generateRenderData() {
         float                  offsetX  = wallWidth + m_columnSpacing + 0.5f * brickWidth;
         float                  stepX    = m_columnSpacing + brickWidth;
         for (size_t j = 0; j < brickRow.size(); ++j, offsetX += stepX) {
-            m_instances[instanceDataIndex].position     = {offsetX, offsetY, 0.0f};
+            m_instances[instanceDataIndex].position     = {offsetX, offsetY, GAME_DEPTH};
             m_instances[instanceDataIndex].scale        = {brickWidth, brickHeight};
             m_instances[instanceDataIndex].textureIndex = m_brickTypes[m_levelLayout[i][j]].textureId;
             m_instances[instanceDataIndex].uvOffset     = {0.0f, 0.0f};
@@ -238,6 +250,15 @@ void Level::generateRenderData() {
             ++instanceDataIndex;
         }
     }
+
+    // Foreground
+    m_foregroundIndex                           = instanceDataIndex;
+    m_instances[m_foregroundIndex].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f, FOREGROUND_DEPTH};
+    m_instances[m_foregroundIndex].scale        = {m_windowWidth, m_windowHeight};
+    m_instances[m_foregroundIndex].textureIndex = 0;
+    m_instances[m_foregroundIndex].uvOffset     = {0.0f, 0.0f};
+    m_instances[m_foregroundIndex].uvScale      = {1.0f, 1.0f};
+    m_instances[m_foregroundIndex].health       = UINT32_MAX;
 
     uint32_t instanceDataBufferSize = VECTOR_SIZE_BYTES(m_instances);
     m_instanceBuffer                = Resources::createBuffer(instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
