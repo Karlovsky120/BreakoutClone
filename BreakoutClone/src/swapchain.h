@@ -2,8 +2,6 @@
 #include "common.h"
 #include "commonExternal.h"
 
-#define FRAMERATE_CAPPED 0
-
 struct SDL_Window;
 
 class Swapchain {

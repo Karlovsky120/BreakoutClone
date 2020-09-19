@@ -3,6 +3,9 @@
 #include "common.h"
 #include "commonExternal.h"
 
+#define MILISECONDS(microseconds) (microseconds * 0.001f)
+#define SECONDS(microseconds)     (microseconds * 0.000001f)
+
 class Level;
 
 class Physics {

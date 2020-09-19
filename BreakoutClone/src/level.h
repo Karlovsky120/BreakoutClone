@@ -6,6 +6,9 @@
 #include "common.h"
 #include "commonExternal.h"
 
+// Smaller the number, stronger the blur
+#define SIDE_BLUR_STRENGTH (1.0f / 16.0f)
+
 #define MAX_COLUMN_COUNT 35
 #define MAX_ROW_COUNT    30
 

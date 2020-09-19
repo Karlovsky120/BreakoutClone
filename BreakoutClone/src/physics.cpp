@@ -1,9 +1,6 @@
 #include "physics.h"
 #include "level.h"
 
-#define MILISECONDS(microseconds) (microseconds * 0.001f)
-#define SECONDS(microseconds)     (microseconds * 0.000001f)
-
 #define CROSS2D(first, second) ((first).x * (second).y - (first).y * (second).x)
 #define SIGNUM(x)              ((x > 0.0) - (x < 0.0))
 

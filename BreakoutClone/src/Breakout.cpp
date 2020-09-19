@@ -9,6 +9,7 @@
 #include "common.h"
 
 #include <filesystem>
+#include <thread>
 
 void Breakout::run() {
     m_levels[0].load();
@@ -55,18 +56,21 @@ void Breakout::pollEvents() {
     }
 }
 
+const uint32_t Breakout::getFrametime() {
+    std::chrono::high_resolution_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
+    uint32_t frameTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::microseconds>(currentTime - m_time).count());
+    m_time             = currentTime;
+
+    return frameTime;
+}
+
 void Breakout::gameLoop() {
-    std::chrono::high_resolution_clock::time_point oldTime = std::chrono::high_resolution_clock::now();
+    uint32_t targetFrameTime = 1'000'000 / TARGET_FRAMERATE;
+
+    m_time = std::chrono::high_resolution_clock::now();
 
     while (!m_quit) {
         pollEvents();
-
-        Renderer::getInstance()->acquireImage();
-
-        std::chrono::high_resolution_clock::time_point newTime = std::chrono::high_resolution_clock::now();
-        uint32_t frameTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::microseconds>(newTime - oldTime).count());
-        oldTime            = newTime;
-        m_time += frameTime;
 
         float     ballSpeed     = 0.0f;
         float     padSpeed      = 0.0f;
@@ -80,17 +84,26 @@ void Breakout::gameLoop() {
             padSpeed = 0.001f;
         }
 
+        uint32_t frameTime = getFrametime();
         Physics::resolveFrame(frameTime, m_levels[0], ballSpeed, padSpeed, ballDirection);
         m_levels[0].updateGPUData();
 
-        if (m_time > 500'000) {
+        if (m_timeCounter > 500'000) {
             char title[256];
-            sprintf_s(title, "Breakout! Frametime: %.2fms", frameTime / 1'000.0f);
+            sprintf_s(title, "Breakout! Frametime: %.2fms", MILISECONDS(m_timeCounter) / static_cast<float>(m_frameCount));
             Renderer::setWindowTitle(title);
-            m_time = 0;
+            m_timeCounter = 0;
+            m_frameCount  = 0;
         }
 
+        Renderer::getInstance()->acquireImage();
         Renderer::getInstance()->renderAndPresentImage();
+
+        int32_t remainingFrameTime = targetFrameTime - frameTime;
+        std::this_thread::sleep_for(std::chrono::microseconds(remainingFrameTime));
+
+        m_timeCounter += targetFrameTime == 0 ? frameTime : targetFrameTime;
+        ++m_frameCount;
     }
 
     vkDeviceWaitIdle(Renderer::getDevice());

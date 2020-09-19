@@ -114,12 +114,13 @@ const VkPresentModeKHR Swapchain::getPresentMode() const {
     std::vector<VkPresentModeKHR> presentModes(presentModesCount);
     VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(m_physicalDevice, m_surface, &presentModesCount, presentModes.data()));
 
-    bool immediatePresentModeSupported = false;
     for (VkPresentModeKHR presentMode : presentModes) {
-        immediatePresentModeSupported = immediatePresentModeSupported || presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR;
+        if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            return VK_PRESENT_MODE_MAILBOX_KHR;
+        }
     }
 
-    return FRAMERATE_CAPPED || !immediatePresentModeSupported ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+    return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 void Swapchain::createSwapchain(const uint32_t& queueFamilyIndex) {

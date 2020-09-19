@@ -45,10 +45,10 @@ void Level::load() {
     // Load transparent texture to position 0
     loadTexture("transparent.png");
 
-    m_padTextureId             = loadTexture("pad.png");
+    m_padTextureId             = loadTexture("bricks/wood.png");
     m_ballTextureId            = loadTexture("ball.png");
     m_backgroundTextureId      = loadTexture(m_backgroundTexturePath);
-    m_backgroundTextureSmallId = loadTexture(m_backgroundTexturePath, 1.0f / 32.0f);
+    m_backgroundTextureSmallId = loadTexture(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
 
     for (auto& entry : m_brickTypes) {
         entry.second.textureId = loadTexture(entry.second.texturePath);
