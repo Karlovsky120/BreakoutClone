@@ -1,6 +1,7 @@
 #define VOLK_IMPLEMENTATION
 #include "breakout.h"
 
+#include "physics.h"
 #include "renderer.h"
 #include "resources.h"
 #include "sharedStructures.h"
@@ -42,43 +43,56 @@ void Breakout::loadLevelData() {
     }
 }
 
-void Breakout::gameLoop() {
-    bool updatedUI = false;
-
-    std::chrono::high_resolution_clock::time_point oldTime = std::chrono::high_resolution_clock::now();
-    uint32_t                                       time    = 0;
-
+void Breakout::pollEvents() {
     SDL_Event sdlEvent;
-    bool      quit = false;
-
-    while (!quit) {
-        while (SDL_PollEvent(&sdlEvent)) {
-            switch (sdlEvent.type) {
-            case SDL_QUIT:
-                quit = true;
-                break;
-            case SDL_KEYDOWN:
-                // m_keyStates[sdlEvent.key.keysym.sym].pressed = true;
-                break;
-            case SDL_KEYUP:
-                // m_keyStates[sdlEvent.key.keysym.sym].pressed = false;
-                break;
-            }
+    while (SDL_PollEvent(&sdlEvent)) {
+        switch (sdlEvent.type) {
+        case SDL_QUIT:
+            m_quit = true;
+            break;
+        case SDL_KEYDOWN:
+            m_keyPressed[sdlEvent.key.keysym.sym] = true;
+            break;
+        case SDL_KEYUP:
+            m_keyPressed[sdlEvent.key.keysym.sym] = false;
+            break;
         }
+    }
+}
+
+void Breakout::gameLoop() {
+    std::chrono::high_resolution_clock::time_point oldTime = std::chrono::high_resolution_clock::now();
+
+    while (!m_quit) {
+        pollEvents();
 
         Renderer::getInstance()->acquireImage();
 
         std::chrono::high_resolution_clock::time_point newTime = std::chrono::high_resolution_clock::now();
         uint32_t frameTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::microseconds>(newTime - oldTime).count());
         oldTime            = newTime;
-        time += frameTime;
+        m_time += frameTime;
 
-        if (time > 500'000 || updatedUI) {
+        float     ballSpeed     = 0.0f;
+        float     padSpeed      = 0.0f;
+        glm::vec2 ballDirection = {0.0f, -1.0f};
+
+        if (m_keyPressed[SDLK_a]) {
+            padSpeed = -0.001f;
+        }
+
+        if (m_keyPressed[SDLK_d]) {
+            padSpeed = 0.001f;
+        }
+
+        Physics::resolveFrame(frameTime, m_levels[0].getInstances(), ballSpeed, padSpeed, ballDirection);
+        m_levels[0].updateGPUData();
+
+        if (m_time > 500'000) {
             char title[256];
             sprintf_s(title, "Breakout! Frametime: %.2fms", frameTime / 1'000.0f);
             Renderer::setWindowTitle(title);
-            time      = 0;
-            updatedUI = false;
+            m_time = 0;
         }
 
         Renderer::getInstance()->renderAndPresentImage();

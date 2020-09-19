@@ -14,6 +14,10 @@
 #pragma warning(disable : 26495) // Variable * is uninitialized.Always initialize a member variable.
 #pragma warning(disable : 28182) // Dereferencing NULL pointer '*' contains the same NULL value as '*'.
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_XYZW_ONLY
+#include "glm/vec2.hpp"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -39,8 +43,9 @@
 #include <stdexcept>
 #include <string>
 
-const uint32_t Level::getBrickCount() const { return m_brickCount; }
-const uint32_t Level::getForegroundIndex() const { return m_foregroundIndex; };
+const uint32_t         Level::getBrickCount() const { return m_brickCount; }
+const uint32_t         Level::getForegroundIndex() const { return m_foregroundIndex; };
+std::vector<Instance>& Level::getInstances() { return m_instances; };
 
 void Level::load() {
 
@@ -62,6 +67,8 @@ void Level::load() {
 
     Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
 }
+
+void Level::updateGPUData() const { Resources::uploadToHostVisibleBuffer(m_instances.data(), m_instanceDataBufferSize, m_instanceBuffer.memory); }
 
 Level::Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight)
     : m_levelIndex(levelIndex), m_windowWidth(windowWidth), m_windowHeight(windowHeight) {
@@ -260,11 +267,12 @@ void Level::generateRenderData() {
     m_instances[m_foregroundIndex].uvScale      = {1.0f, 1.0f};
     m_instances[m_foregroundIndex].health       = UINT32_MAX;
 
-    uint32_t instanceDataBufferSize = VECTOR_SIZE_BYTES(m_instances);
-    m_instanceBuffer                = Resources::createBuffer(instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    m_instanceDataBufferSize = VECTOR_SIZE_BYTES(m_instances);
+    m_instanceBuffer         = Resources::createBuffer(m_instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     Renderer::nameObject(&m_instanceBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Instance buffer");
-    Resources::uploadToHostVisibleBuffer(m_instances.data(), instanceDataBufferSize, m_instanceBuffer.memory);
+
+    Resources::uploadToHostVisibleBuffer(m_instances.data(), m_instanceDataBufferSize, m_instanceBuffer.memory);
 }
 
 uint32_t Level::loadTexture(const std::string& pathToTexture, const float& scale) {

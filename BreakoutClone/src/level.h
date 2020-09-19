@@ -43,9 +43,12 @@ struct BrickType {
 
 class Level {
   public:
-    const uint32_t getBrickCount() const;
-    const uint32_t getForegroundIndex() const;
-    void           load();
+    const uint32_t         getBrickCount() const;
+    const uint32_t         getForegroundIndex() const;
+    std::vector<Instance>& getInstances();
+
+    void load();
+    void updateGPUData() const;
     Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight);
     void destroy();
 
@@ -80,7 +83,8 @@ class Level {
 
     std::vector<Image> m_textures;
 
-    Buffer m_instanceBuffer;
+    Buffer   m_instanceBuffer;
+    uint32_t m_instanceDataBufferSize;
 
     void parseXml(const char* fullPath);
     void generateRenderData();
