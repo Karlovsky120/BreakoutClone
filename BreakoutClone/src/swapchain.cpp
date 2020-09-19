@@ -126,7 +126,7 @@ const VkPresentModeKHR Swapchain::getPresentMode() const {
         immediatePresentModeSupported = immediatePresentModeSupported || presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
 
-    return immediatePresentModeSupported ? VK_PRESENT_MODE_IMMEDIATE_KHR : VK_PRESENT_MODE_FIFO_KHR;
+    return FRAMERATE_CAPPED || !immediatePresentModeSupported ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 }
 
 void Swapchain::createSwapchain(const uint32_t& queueFamilyIndex) {

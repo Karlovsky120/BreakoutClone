@@ -9,6 +9,8 @@
 
 #include <vector>
 
+#define FRAMERATE_CAPPED 1
+
 struct SDL_Window;
 
 class Swapchain {
