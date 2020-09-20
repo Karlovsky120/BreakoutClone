@@ -54,7 +54,8 @@ void Renderer::init() {
     createUniformBuffer();
     writeDescriptorSet();
 
-    createRenderCommandPoolsAndAllocateBuffers();
+    createRenderCommandPools();
+    allocateRenderCommandBuffers();
     createSyncObjects();
 
     createVertexAndIndexBuffers();
@@ -167,6 +168,14 @@ void Renderer::recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const 
     for (uint32_t i = 0; i < getInstance()->m_swapchainImageCount; ++i) {
         getInstance()->recordRenderCommandBuffer(i, instanceBuffer, instanceCount);
     }
+}
+
+void Renderer::resetRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount) {
+    vkFreeCommandBuffers(m_renderer->m_device, m_renderer->m_renderCommandPool, m_renderer->m_swapchainImageCount, m_renderer->m_renderCommandBuffers.data());
+
+    m_renderer->m_renderCommandBuffers.clear();
+    m_renderer->allocateRenderCommandBuffers();
+    m_renderer->recordRenderCommandBuffers(instanceBuffer, instanceCount);
 }
 
 void Renderer::initSDL() {
@@ -620,13 +629,15 @@ void Renderer::writeDescriptorSet() {
     vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 }
 
-void Renderer::createRenderCommandPoolsAndAllocateBuffers() {
+void Renderer::createRenderCommandPools() {
     VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     createInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     createInfo.queueFamilyIndex        = m_queueFamilyIndex;
 
     VK_CHECK(vkCreateCommandPool(m_device, &createInfo, nullptr, &m_renderCommandPool));
+}
 
+void Renderer::allocateRenderCommandBuffers() {
     VkCommandBufferAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     allocateInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocateInfo.commandBufferCount          = m_swapchainImageCount;

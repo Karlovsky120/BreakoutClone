@@ -40,13 +40,13 @@
 #include <sstream>
 #include <string>
 
-void Level::load() {
+void Level::load(const bool& reset) {
 
     // Load cracked texture to position 0
     loadTexture("bricks\\cracks.png");
-
     m_padTextureId             = loadTexture("pad.png");
     m_ballTextureId            = loadTexture("ball.png");
+    m_foregroundTextureId      = loadTexture("boards\\foreground.png");
     m_backgroundTextureId      = loadTexture(m_backgroundTexturePath);
     m_backgroundTextureSmallId = loadTexture(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
 
@@ -58,10 +58,37 @@ void Level::load() {
 
     generateRenderData();
 
-    Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
+    if (reset) {
+        Renderer::resetRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
+    } else {
+        Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
+    }
 }
 
 void Level::updateGPUData() const { Resources::uploadToHostVisibleBuffer(m_instances.data(), m_instanceDataBufferSize, m_instanceBuffer.memory); }
+
+std::vector<Instance>& Level::getInstances() { return m_instances; }
+const glm::vec2        Level::getWindowDimensions() const { return {m_windowWidth, m_windowHeight}; }
+const float&           Level::getBasePadSpeed() const { return m_basePadSpeed; }
+const float&           Level::getBaseBallSpeed() const { return m_baseBallSpeed; }
+const uint32_t&        Level::getTotalBrickCount() const { return m_brickCount; }
+const uint32_t&        Level::getRemainingBrickCount() const { return m_remainingBrickCount; }
+glm::vec2&             Level::getBallDirection() { return m_ballDirection; }
+Instance&              Level::getForeground() { return m_instances[m_foregroundIndex]; }
+void                   Level::resetPadAndBall() {
+    m_instances[PAD_INDEX].position  = m_padInitialPosition;
+    m_instances[BALL_INDEX].position = m_ballInitialPosition;
+}
+
+const uint32_t& Level::loseLife() {
+    --m_remainingLivesCount;
+    return m_remainingLivesCount;
+}
+
+const uint32_t& Level::destroyBrick() {
+    --m_remainingBrickCount;
+    return m_remainingBrickCount;
+}
 
 Level::Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight)
     : m_levelIndex(levelIndex), m_windowWidth(windowWidth), m_windowHeight(windowHeight) {
@@ -169,15 +196,21 @@ void Level::parseXml(const char* fullPath) {
 }
 
 void Level::generateRenderData() {
-    float     brickWidth    = (m_windowWidth - (MAX_COLUMN_COUNT + 1) * MAX_COLUMN_SPACING) / static_cast<float>(MAX_COLUMN_COUNT);
-    float     bottomPadding = MAX_COLUMN_SPACING * 15;
-    float     brickHeight   = (m_windowHeight - ((MAX_ROW_COUNT + 1) * MAX_ROW_SPACING) - bottomPadding) / static_cast<float>(MAX_ROW_COUNT);
-    float     playAreaWidth = m_columnCount * brickWidth + (m_columnCount + 1) * m_columnSpacing;
-    float     wallWidth     = (m_windowWidth - playAreaWidth) * 0.5f;
-    float     ballRadius    = 0.375f * brickWidth;
+    float brickWidth    = (m_windowWidth - (MAX_COLUMN_COUNT + 1) * MAX_COLUMN_SPACING) / static_cast<float>(MAX_COLUMN_COUNT);
+    float bottomPadding = MAX_COLUMN_SPACING * 15;
+    float brickHeight   = (m_windowHeight - ((MAX_ROW_COUNT + 1) * MAX_ROW_SPACING) - bottomPadding) / static_cast<float>(MAX_ROW_COUNT);
+    float playAreaWidth = m_columnCount * brickWidth + (m_columnCount + 1) * m_columnSpacing;
+    float wallWidth     = (m_windowWidth - playAreaWidth) * 0.5f;
+    float ballRadius    = 0.375f * brickWidth;
+    float padOffset     = m_windowHeight - MAX_ROW_SPACING * 2.0f;
+
+    printf("%f %f\n", playAreaWidth, wallWidth);
+
     glm::vec2 padDimensions = {playAreaWidth * 0.2f, brickHeight};
 
-    float padOffset = m_windowHeight - MAX_ROW_SPACING * 2.0f;
+    m_basePadSpeed        = PAD_SPEED_FACTOR / playAreaWidth;
+    m_baseBallSpeed       = BALL_SPEED_FACTOR / playAreaWidth;
+    m_remainingLivesCount = LIVES_COUNT;
 
     Instance defaultInstance;
     defaultInstance.id           = UINT32_MAX;
@@ -217,14 +250,15 @@ void Level::generateRenderData() {
     m_instances[RIGHT_WALL_INDEX].uvScale      = {wallWidth / static_cast<float>(m_windowWidth), 1.0f};
 
     // The pad
-    m_instances[PAD_INDEX].position     = {wallWidth + playAreaWidth * 0.5f, padOffset};
+    m_padInitialPosition                = {wallWidth + playAreaWidth * 0.5f, padOffset};
+    m_instances[PAD_INDEX].position     = m_padInitialPosition;
     m_instances[PAD_INDEX].depth        = GAME_DEPTH;
     m_instances[PAD_INDEX].scale        = padDimensions;
     m_instances[PAD_INDEX].textureIndex = m_padTextureId;
 
     // The ball
-    m_instances[BALL_INDEX].position.x   = m_windowWidth * 0.5f;
-    m_instances[BALL_INDEX].position.y   = padOffset - (0.5f * padDimensions.y + ballRadius + 1.0f);
+    m_ballInitialPosition                = {m_windowWidth * 0.5f, padOffset - (0.5f * padDimensions.y + ballRadius + 1.0f)};
+    m_instances[BALL_INDEX].position     = m_ballInitialPosition;
     m_instances[BALL_INDEX].depth        = GAME_DEPTH;
     m_instances[BALL_INDEX].scale        = {2.0f * ballRadius, 2.0f * ballRadius};
     m_instances[BALL_INDEX].textureIndex = m_ballTextureId;
@@ -238,12 +272,18 @@ void Level::generateRenderData() {
         float                  offsetX  = wallWidth + m_columnSpacing + 0.5f * brickWidth;
         float                  stepX    = m_columnSpacing + brickWidth;
         for (size_t j = 0; j < brickRow.size(); ++j, offsetX += stepX) {
+            const uint32_t brickMaxHealth               = m_brickTypes[m_levelLayout[i][j]].hitPoints;
             m_instances[instanceDataIndex].position     = {offsetX, offsetY};
             m_instances[instanceDataIndex].depth        = GAME_DEPTH;
             m_instances[instanceDataIndex].scale        = {brickWidth, brickHeight};
             m_instances[instanceDataIndex].textureIndex = m_brickTypes[m_levelLayout[i][j]].textureId;
-            m_instances[instanceDataIndex].health       = m_brickTypes[m_levelLayout[i][j]].hitPoints;
-            m_instances[instanceDataIndex].maxHealth    = m_brickTypes[m_levelLayout[i][j]].hitPoints;
+            m_instances[instanceDataIndex].health       = brickMaxHealth;
+            m_instances[instanceDataIndex].maxHealth    = brickMaxHealth;
+
+            if (brickMaxHealth > 0 && brickMaxHealth < UINT32_MAX) {
+                ++m_remainingBrickCount;
+            }
+
             ++instanceDataIndex;
         }
     }
@@ -253,7 +293,7 @@ void Level::generateRenderData() {
     m_instances[m_foregroundIndex].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f};
     m_instances[m_foregroundIndex].depth        = FOREGROUND_DEPTH;
     m_instances[m_foregroundIndex].scale        = {m_windowWidth, m_windowHeight};
-    m_instances[m_foregroundIndex].textureIndex = 0;
+    m_instances[m_foregroundIndex].textureIndex = m_foregroundTextureId;
     m_instances[m_foregroundIndex].textureAlpha = 0.0f;
 
     m_instanceDataBufferSize = VECTOR_SIZE_IN_BYTES(m_instances);

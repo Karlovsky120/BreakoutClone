@@ -41,6 +41,7 @@ class Renderer {
     void        renderAndPresentImage();
 
     static void recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
+    static void resetRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
     static void updateTextureArray(std::vector<Image>& textures);
     static void nameObject(void* handle, const VkObjectType& type, const char* name);
 
@@ -117,7 +118,8 @@ class Renderer {
     void allocateDescriptorSet();
     void createUniformBuffer();
     void writeDescriptorSet();
-    void createRenderCommandPoolsAndAllocateBuffers();
+    void createRenderCommandPools();
+    void allocateRenderCommandBuffers();
     void createSyncObjects();
     void setupRenderLoop();
     void createVertexAndIndexBuffers();

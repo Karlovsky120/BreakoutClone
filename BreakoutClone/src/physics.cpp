@@ -6,50 +6,61 @@
 #define CROSS2D(first, second) ((first).x * (second).y - (first).y * (second).x)
 #define SIGNUM(x)              ((x > 0.0) - (x < 0.0))
 
-void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeed /*pixels per microsecond*/,
-                           const float& padSpeed /*pixels per microsecond*/, glm::vec2& ballDirection, bool& gameOver) {
+LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeedModifier /*pixels per microsecond*/,
+                                 const float& padSpeedModifier /*pixels per microsecond*/) {
 
-    Instance& ball      = level.m_instances[BALL_INDEX];
-    Instance& pad       = level.m_instances[PAD_INDEX];
-    Instance& leftWall  = level.m_instances[LEFT_WALL_INDEX];
-    Instance& rightWall = level.m_instances[RIGHT_WALL_INDEX];
+    std::vector<Instance>& instances = level.getInstances();
 
-    Instance* bricks = level.m_instances.data() + BRICK_START_INDEX;
+    glm::vec2& ballPosition = instances[BALL_INDEX].position;
+    glm::vec2& ballScale    = instances[BALL_INDEX].scale;
+    glm::vec2& padPosition  = instances[PAD_INDEX].position;
+    glm::vec2& padScale     = instances[PAD_INDEX].scale;
+
+    Instance& leftWall  = instances[LEFT_WALL_INDEX];
+    Instance& rightWall = instances[RIGHT_WALL_INDEX];
+
+    Instance* bricks = instances.data() + BRICK_START_INDEX;
 
     float leftWallEdge  = leftWall.position.x + leftWall.scale.x * 0.5f;
     float rightWallEdge = rightWall.position.x - rightWall.scale.x * 0.5f;
-    float ballRadius    = ball.scale.x * 0.5f;
+    float ballRadius    = ballScale.x * 0.5f;
+
+    float padSpeed = level.getBasePadSpeed() * padSpeedModifier;
 
     // Move the pad as much as the ball and walls allow
     if (padSpeed != 0.0) {
         float paddP = padSpeed * frameTime;
         float t;
 
-        float leftPadEdge  = pad.position.x - pad.scale.x * 0.5f;
-        float rightPadEdge = pad.position.x + pad.scale.x * 0.5f;
+        float leftPadEdge  = padPosition.x - padScale.x * 0.5f;
+        float rightPadEdge = padPosition.x + padScale.x * 0.5f;
 
         // if it would intersect the ball
         glm::vec2 padMoveDirection = glm::vec2(SIGNUM(paddP), 0.0f);
-        if (detectCollision(pad.position, pad.scale, padMoveDirection, paddP, ball.position, ball.scale, t)) {
-            pad.position.x += paddP * t * (1.0f - EPSILON);
-            float leftLimit  = leftWallEdge + 2.1f * ballRadius + pad.scale.x * 0.5f;
-            float rightLimit = rightWallEdge - 2.1f * ballRadius - pad.scale.x * 0.5f;
-            pad.position.x   = std::clamp(pad.position.x, leftLimit, rightLimit);
+        if (detectCollision(padPosition, padScale, padMoveDirection, paddP, ballPosition, ballScale, t)) {
+            padPosition.x += paddP * t * (1.0f - EPSILON);
+            float leftLimit  = leftWallEdge + 2.1f * ballRadius + padScale.x * 0.5f;
+            float rightLimit = rightWallEdge - 2.1f * ballRadius - padScale.x * 0.5f;
+            padPosition.x    = std::clamp(padPosition.x, leftLimit, rightLimit);
         } else if (leftPadEdge + paddP < leftWallEdge) { // if it would intersect the left wall
-            pad.position.x = leftWallEdge + pad.scale.x * 0.5f;
+            padPosition.x = leftWallEdge + padScale.x * 0.5f;
         } else if (rightPadEdge + paddP > rightWallEdge) { // if it would intersect the right wall
-            pad.position.x = rightWallEdge - pad.scale.x * 0.5f;
+            padPosition.x = rightWallEdge - padScale.x * 0.5f;
         } else {
-            pad.position.x += paddP;
+            padPosition.x += paddP;
         }
     }
 
+    float ballSpeed = level.getBaseBallSpeed() * ballSpeedModifier;
+
     if (ballSpeed == 0.0f) {
-        ball.position.x = pad.position.x;
-        return;
+        ballPosition.x = padPosition.x;
+        return LevelState::STILL_ALIVE;
     }
 
-    float remainingTravelDistance = ballSpeed * frameTime;
+    float      remainingTravelDistance = ballSpeed * frameTime;
+    glm::vec2& ballDirection           = level.getBallDirection();
+
     while (remainingTravelDistance > 0.0f) {
         float     minimalT                    = 2.0f;
         glm::vec2 reflectedDirectionOfClosest = ballDirection; // If no redirection is triggered
@@ -57,14 +68,18 @@ void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& le
 
         float t;
 
-        glm::vec2 playAreaCenter = {level.m_windowWidth * 0.5f, level.m_windowHeight * 0.5f};
-        glm::vec2 playAreaRect   = {level.m_windowWidth - (2.0f * leftWallEdge + 4.0f * ballRadius), level.m_windowHeight - 4.0f * ballRadius};
+        glm::vec2 windowDimensions = level.getWindowDimensions();
+        glm::vec2 playAreaCenter   = {windowDimensions.x * 0.5f, windowDimensions.y * 0.5f + 3.0f * ballRadius};
+        glm::vec2 playAreaRect     = {windowDimensions.x - (2.0f * leftWallEdge), windowDimensions.y + 6.0f * ballRadius};
 
+        // The walls
         glm::vec2 latestReflectedDirection = ballDirection;
-        if (detectCollision(ball.position, ball.scale, latestReflectedDirection, remainingTravelDistance, playAreaCenter, playAreaRect, t)) {
-            if (latestReflectedDirection.y < 0.0f) {
-                gameOver = true;
-                // return;
+        // Pass inverted ball dimensions so minkowski sum is calculcated correctly since the edges are being tested from the inside
+        if (detectCollision(ballPosition, -ballScale, latestReflectedDirection, remainingTravelDistance, playAreaCenter, playAreaRect, t)) {
+            printf("%f %f\n", ballDirection.y, latestReflectedDirection.y);
+            // If bottom edge is hit
+            if (ballDirection.y != latestReflectedDirection.y && latestReflectedDirection.y < 0.0f) {
+                return LevelState::LOST;
             }
 
             minimalT                    = t < minimalT ? t : minimalT;
@@ -72,12 +87,12 @@ void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& le
         }
 
         // The pad
-        if (detectCollision(ball.position, ball.scale, latestReflectedDirection, remainingTravelDistance, pad.position, pad.scale, t)) {
+        if (detectCollision(ballPosition, ballScale, latestReflectedDirection, remainingTravelDistance, padPosition, padScale, t)) {
             if (t < minimalT) {
                 if (ballDirection.y == -latestReflectedDirection.y) {
-                    glm::vec2 collisionPoint    = ball.position + ballTravelPath * (ballRadius + t);
-                    glm::vec2 padTopLeftCorner  = pad.position - 0.5f * pad.scale;
-                    float     hitScale          = glm::distance(collisionPoint, padTopLeftCorner) / pad.scale.x;
+                    float collisionPoint        = (ballPosition + ballTravelPath * (ballRadius + t)).x;
+                    float padLeftCorner         = padPosition.x - 0.5f * padScale.x;
+                    float hitScale              = (collisionPoint - padLeftCorner) / padScale.x;
                     hitScale                    = hitScale * 2.0f - 1.0f;
                     reflectedDirectionOfClosest = glm::normalize(glm::vec2(hitScale * 1.0f, -1.0f));
                 } else {
@@ -87,10 +102,11 @@ void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& le
         }
 
         // The bricks
-        size_t hitIndex = UINT32_MAX;
-        for (size_t i = 0; i < level.m_brickCount; ++i) {
+        size_t          hitIndex   = UINT32_MAX;
+        const uint32_t& brickCount = level.getTotalBrickCount();
+        for (size_t i = 0; i < brickCount; ++i) {
             if (bricks[i].health > 0 &&
-                detectCollision(ball.position, ball.scale, latestReflectedDirection, remainingTravelDistance, bricks[i].position, bricks[i].scale, t)) {
+                detectCollision(ballPosition, ballScale, latestReflectedDirection, remainingTravelDistance, bricks[i].position, bricks[i].scale, t)) {
                 minimalT                    = t < minimalT ? t : minimalT;
                 reflectedDirectionOfClosest = latestReflectedDirection;
                 hitIndex                    = i;
@@ -99,18 +115,28 @@ void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& le
 
         if (hitIndex != UINT32_MAX && bricks[hitIndex].health != UINT32_MAX) {
             --bricks[hitIndex].health;
+            if (bricks[hitIndex].health == 0) {
+                level.destroyBrick();
+            }
         }
 
         minimalT = minimalT > 1.0f ? 1.0f : minimalT;
 
+        // If anything is hit
         if (ballDirection != reflectedDirectionOfClosest) {
             minimalT -= EPSILON;
             ballDirection = reflectedDirectionOfClosest;
         }
 
-        ball.position += ballTravelPath * minimalT;
+        ballPosition += ballTravelPath * minimalT;
         remainingTravelDistance -= remainingTravelDistance * minimalT;
     }
+
+    if (level.getRemainingBrickCount() > 0) {
+        return LevelState::STILL_ALIVE;
+    }
+
+    return LevelState::HUGE_SUCCESS;
 }
 
 bool Physics::detectCollision(const glm::vec2& center1, const glm::vec2& rect1, glm::vec2& ballDirection, const float& ballSpeed, const glm::vec2& center2,
