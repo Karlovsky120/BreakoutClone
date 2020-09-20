@@ -42,9 +42,7 @@
 
 void Level::load() {
 
-    // Load transparent texture to position 0
-    loadTexture("transparent.png");
-    // Load cracked texture to position 1
+    // Load cracked texture to position 0
     loadTexture("bricks\\cracks.png");
 
     m_padTextureId             = loadTexture("pad.png");
@@ -187,6 +185,7 @@ void Level::generateRenderData() {
     defaultInstance.depth        = GAME_DEPTH;
     defaultInstance.scale        = {1.0f, 1.0f};
     defaultInstance.textureIndex = 0;
+    defaultInstance.textureAlpha = 1.0f;
     defaultInstance.uvOffset     = {0.0f, 0.0f};
     defaultInstance.uvScale      = {1.0f, 1.0f};
     defaultInstance.maxHealth    = UINT32_MAX;
@@ -255,6 +254,7 @@ void Level::generateRenderData() {
     m_instances[m_foregroundIndex].depth        = FOREGROUND_DEPTH;
     m_instances[m_foregroundIndex].scale        = {m_windowWidth, m_windowHeight};
     m_instances[m_foregroundIndex].textureIndex = 0;
+    m_instances[m_foregroundIndex].textureAlpha = 0.0f;
 
     m_instanceDataBufferSize = VECTOR_SIZE_IN_BYTES(m_instances);
     m_instanceBuffer         = Resources::createBuffer(m_instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,

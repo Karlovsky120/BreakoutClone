@@ -6,6 +6,8 @@
 #define MILISECONDS(microseconds) (microseconds * 0.001f)
 #define SECONDS(microseconds)     (microseconds * 0.000001f)
 
+#define EPSILON 0.0001f
+
 class Level;
 
 class Physics {

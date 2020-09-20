@@ -1,7 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_scalar_block_layout : require
+//#extension GL_EXT_scalar_block_layout : require
 
 #include "sharedStructures.h"
 
@@ -10,15 +10,17 @@ layout(location = 1) in vec2  instancePosition;
 layout(location = 2) in float instanceDepth;
 layout(location = 3) in vec2  instanceScale;
 layout(location = 4) in uint  textureIndex;
-layout(location = 5) in vec2  uvOffset;
-layout(location = 6) in vec2  uvScale;
-layout(location = 7) in uint  health;
-layout(location = 8) in uint  maxHealth;
+layout(location = 5) in float textureAlpha;
+layout(location = 6) in vec2  uvOffset;
+layout(location = 7) in vec2  uvScale;
+layout(location = 8) in uint  health;
+layout(location = 9) in uint  maxHealth;
 
-layout(location = 0) out uint textureIndexFrag;
-layout(location = 1) out vec2 uvCoords;
-layout(location = 2) out uint healthFrag;
-layout(location = 3) out uint maxHealthFrag;
+layout(location = 0) out uint  textureIndexFrag;
+layout(location = 1) out float textureAlphaFrag;
+layout(location = 2) out vec2  uvCoordsFrag;
+layout(location = 3) out uint  healthFrag;
+layout(location = 4) out uint  maxHealthFrag;
 
 layout(set = 0, binding = 0) readonly buffer UnifromBuffer {
     UniformData data;
@@ -31,10 +33,11 @@ void main() {
     }
 
     textureIndexFrag = textureIndex;
+    textureAlphaFrag = textureAlpha;
     healthFrag = health;
     maxHealthFrag = maxHealth;
 
-    uvCoords = (vertex + vec2(0.5)) * uvScale + uvOffset;
+    uvCoordsFrag = (vertex + vec2(0.5)) * uvScale + uvOffset;
 
     vec2 vertexPositioned = (vertex * instanceScale) + instancePosition;
     vec2 vertexScaledToClipSpace = vertexPositioned * ub.data.inversedWindowDimensions;

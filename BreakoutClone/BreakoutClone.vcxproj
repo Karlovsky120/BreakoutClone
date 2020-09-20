@@ -154,7 +154,7 @@
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o src/shaders/spirv/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>
@@ -183,7 +183,7 @@
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o src/shaders/spirv/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>
@@ -217,7 +217,7 @@
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o src/shaders/spirv/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>
@@ -251,7 +251,7 @@
       <Command>COPY "$(SolutionDir)external\sdl\lib\x64\SDL2.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.2 -o src/shaders/spirv/%(Filename).spv</Command>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o src/shaders/spirv/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>

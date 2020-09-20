@@ -31,7 +31,7 @@ struct BrickType {
     uint32_t    hitPoints      = 0;
     int32_t     breakScore     = 0;
     uint32_t    textureId      = 0;
-    std::string texturePath    = "transparent.png";
+    std::string texturePath    = "";
     std::string hitSoundPath   = "";
     std::string breakSoundPath = "";
 };

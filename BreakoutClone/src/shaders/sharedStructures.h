@@ -13,6 +13,8 @@
 #define uint uint32_t
 #endif
 
+#define MAX_TEXTURE_COUNT 16
+
 struct Vertex {
     vec2 position;
 };
@@ -25,6 +27,7 @@ struct Instance {
     vec2  uvOffset;
     vec2  uvScale;
     uint  textureIndex;
+    float textureAlpha;
     uint  health;
     uint  maxHealth;
 };

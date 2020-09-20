@@ -200,7 +200,7 @@ void Renderer::setupDebugUtils() {
 
 void Renderer::createInstance() {
     VkApplicationInfo applicationInfo  = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-    applicationInfo.apiVersion         = VK_API_VERSION_1_2;
+    applicationInfo.apiVersion         = VK_API_VERSION_1_0;
     applicationInfo.applicationVersion = 0;
     applicationInfo.pApplicationName   = NULL;
     applicationInfo.pEngineName        = NULL;
@@ -253,16 +253,11 @@ void Renderer::pickPhysicalDevice() {
         VkPhysicalDeviceProperties physicalDeviceProperties = {};
         vkGetPhysicalDeviceProperties(m_physicalDevice, &physicalDeviceProperties);
 
-        if (physicalDeviceProperties.apiVersion < VK_API_VERSION_1_2) {
-            continue;
-        }
-
-        if (physicalDeviceProperties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        if (physicalDeviceProperties.apiVersion < VK_API_VERSION_1_0) {
             continue;
         }
 
         m_queueFamilyIndex = getGenericQueueFamilyIndex(m_physicalDevice);
-
         if (m_queueFamilyIndex == UINT32_MAX) {
             continue;
         }
@@ -434,8 +429,8 @@ void Renderer::createGraphicsPipeline() {
     vertexInputBindingDescriptions[1].stride    = sizeof(Instance);
     vertexInputBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
 
-    std::array<VkVertexInputAttributeDescription, 9> vertexInputAttributeDescriptions;
-    uint32_t                                         inputAttributeIndex = 0;
+    std::array<VkVertexInputAttributeDescription, 10> vertexInputAttributeDescriptions;
+    uint32_t                                          inputAttributeIndex = 0;
 
     // Vertex position
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = VERTEX_BUFFER_BIND_ID;
@@ -472,30 +467,37 @@ void Renderer::createGraphicsPipeline() {
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, textureIndex);
     ++inputAttributeIndex;
 
-    // UV offset
+    // Instance texture alpha
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
     vertexInputAttributeDescriptions[inputAttributeIndex].location = 5;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, textureAlpha);
+    ++inputAttributeIndex;
+
+    // Instance UV offset
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 6;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, uvOffset);
     ++inputAttributeIndex;
 
-    // UV scale
+    // Instance UV scale
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 6;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 7;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, uvScale);
     ++inputAttributeIndex;
 
     // Instance health
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 7;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 8;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_UINT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, health);
     ++inputAttributeIndex;
 
     // Instance max health
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 8;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 9;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_UINT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, maxHealth);
     ++inputAttributeIndex;

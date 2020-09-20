@@ -84,7 +84,7 @@ void Breakout::gameLoop() {
 
         uint32_t frameTime = getFrametime();
         bool     gameOver  = false;
-        Physics::resolveFrame(targetFrameTime, m_levels[0], SECONDS(600), padSpeed, ballDirection, gameOver);
+        Physics::resolveFrame(targetFrameTime, m_levels[0], SECONDS(300), padSpeed, ballDirection, gameOver);
         m_levels[0].updateGPUData();
 
         if (m_timeCounter > 500'000) {
