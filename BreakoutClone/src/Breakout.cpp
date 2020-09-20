@@ -65,16 +65,14 @@ const uint32_t Breakout::getFrametime() {
 }
 
 void Breakout::gameLoop() {
-    uint32_t targetFrameTime = 1'000'000 / TARGET_FRAMERATE;
-
-    m_time = std::chrono::high_resolution_clock::now();
+    uint32_t  targetFrameTime = 1'000'000 / TARGET_FRAMERATE;
+    glm::vec2 ballDirection   = glm::normalize(glm::vec2(1.0f, -1.0f));
+    m_time                    = std::chrono::high_resolution_clock::now();
 
     while (!m_quit) {
         pollEvents();
 
-        float     ballSpeed     = 0.0f;
-        float     padSpeed      = 0.0f;
-        glm::vec2 ballDirection = {0.0f, -1.0f};
+        float padSpeed = 0.0f;
 
         if (m_keyPressed[SDLK_a]) {
             padSpeed = -0.001f;
@@ -85,7 +83,8 @@ void Breakout::gameLoop() {
         }
 
         uint32_t frameTime = getFrametime();
-        Physics::resolveFrame(frameTime, m_levels[0], ballSpeed, padSpeed, ballDirection);
+        bool     gameOver  = false;
+        Physics::resolveFrame(targetFrameTime, m_levels[0], SECONDS(600), padSpeed, ballDirection, gameOver);
         m_levels[0].updateGPUData();
 
         if (m_timeCounter > 500'000) {

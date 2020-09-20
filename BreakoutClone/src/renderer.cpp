@@ -434,7 +434,7 @@ void Renderer::createGraphicsPipeline() {
     vertexInputBindingDescriptions[1].stride    = sizeof(Instance);
     vertexInputBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
 
-    std::array<VkVertexInputAttributeDescription, 7> vertexInputAttributeDescriptions;
+    std::array<VkVertexInputAttributeDescription, 9> vertexInputAttributeDescriptions;
     uint32_t                                         inputAttributeIndex = 0;
 
     // Vertex position
@@ -447,43 +447,57 @@ void Renderer::createGraphicsPipeline() {
     // Instance position
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
     vertexInputAttributeDescriptions[inputAttributeIndex].location = 1;
-    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, position);
+    ++inputAttributeIndex;
+
+    // Instance depth
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 2;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_SFLOAT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, depth);
     ++inputAttributeIndex;
 
     // Instance scale
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 2;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 3;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, scale);
     ++inputAttributeIndex;
 
     // Instance texture index
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 3;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 4;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_UINT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, textureIndex);
     ++inputAttributeIndex;
 
     // UV offset
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 4;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 5;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, uvOffset);
     ++inputAttributeIndex;
 
     // UV scale
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 5;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 6;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32G32_SFLOAT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, uvScale);
     ++inputAttributeIndex;
 
     // Instance health
     vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
-    vertexInputAttributeDescriptions[inputAttributeIndex].location = 6;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 7;
     vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_UINT;
     vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, health);
+    ++inputAttributeIndex;
+
+    // Instance max health
+    vertexInputAttributeDescriptions[inputAttributeIndex].binding  = INSTANCE_BUFFER_BIND_ID;
+    vertexInputAttributeDescriptions[inputAttributeIndex].location = 8;
+    vertexInputAttributeDescriptions[inputAttributeIndex].format   = VK_FORMAT_R32_UINT;
+    vertexInputAttributeDescriptions[inputAttributeIndex].offset   = offsetof(Instance, maxHealth);
     ++inputAttributeIndex;
 
     VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
@@ -580,7 +594,7 @@ void Renderer::createUniformBuffer() {
     m_uniformBuffer = Resources::createBuffer(sizeof(UniformData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     nameObject(&m_uniformBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Uniform buffer");
-    UniformData uniformData = {1.0f / WINDOW_WIDTH, 1.0f / WINDOW_HEIGHT};
+    UniformData uniformData = {{1.0f / WINDOW_WIDTH, 1.0f / WINDOW_HEIGHT}};
 
     Resources::uploadToDeviceLocalBuffer(&uniformData, sizeof(uniformData), m_uniformBuffer.buffer);
 }
@@ -643,15 +657,15 @@ void Renderer::createVertexAndIndexBuffers() {
     std::vector<Vertex>   vertices = {{{-0.5, -0.5}}, {{-0.5, 0.5}}, {{0.5, -0.5}}, {{0.5, 0.5}}};
     std::vector<uint16_t> indices  = {0, 1, 2, 1, 3, 2};
 
-    m_vertexBuffer = Resources::createBuffer(VECTOR_SIZE_BYTES(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    m_vertexBuffer = Resources::createBuffer(VECTOR_SIZE_IN_BYTES(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     nameObject(&m_vertexBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Vertex buffer");
-    Resources::uploadToDeviceLocalBuffer(vertices.data(), VECTOR_SIZE_BYTES(vertices), m_vertexBuffer.buffer);
+    Resources::uploadToDeviceLocalBuffer(vertices.data(), VECTOR_SIZE_IN_BYTES(vertices), m_vertexBuffer.buffer);
 
-    m_indexBuffer = Resources::createBuffer(VECTOR_SIZE_BYTES(indices), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    m_indexBuffer = Resources::createBuffer(VECTOR_SIZE_IN_BYTES(indices), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     nameObject(&m_indexBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Index buffer");
-    Resources::uploadToDeviceLocalBuffer(indices.data(), VECTOR_SIZE_BYTES(indices), m_indexBuffer.buffer);
+    Resources::uploadToDeviceLocalBuffer(indices.data(), VECTOR_SIZE_IN_BYTES(indices), m_indexBuffer.buffer);
 }
 
 void Renderer::updateTextureArray(std::vector<Image>& textures) {

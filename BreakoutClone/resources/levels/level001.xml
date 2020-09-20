@@ -46,8 +46,15 @@
   <Bricks>
     H H H H H H H H H H H H H H H H H H H H
     M M I I M M M M M M M M M M M M I I M M
+	H H H H H H H H H H H H H H H H H H H H
+	H H H H H _ _ H H H H H H H _ _ H H H H
+	M M I I M M M M M M M M M M M M I I M M
+	M M I I M M M M _ _ _ _ M M M M I I M M
+	M M I I M M M M _ _ _ _ M M M M I I M M
     _ S S S _ S S S S _ _ S S S S _ S S S _
     _ _ S S S S S S S S S S S S S S S S _ _
     _ _ _ S S S S S S _ _ S S S S S S _ _ _
+	_ _ _ _ S S S S _ _ _ _ S S S S _ _ _ _
+	_ _ _ _ _ S S _ _ _ _ _ _ S S _ _ _ _ _
   </Bricks>
 </Level>

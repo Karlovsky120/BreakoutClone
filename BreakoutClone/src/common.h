@@ -8,7 +8,7 @@
 
 #define CPP_SHADER_STRUCTURE
 
-#define VECTOR_SIZE_BYTES(vector) (static_cast<uint32_t>(vector.size()) * sizeof(vector[0]))
+#define VECTOR_SIZE_IN_BYTES(vector) (static_cast<uint32_t>(vector.size()) * sizeof(vector[0]))
 
 #ifdef _DEBUG
 #define VALIDATION_ENABLED

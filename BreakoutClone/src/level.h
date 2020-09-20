@@ -18,10 +18,9 @@
 #define BACKGROUND_INDEX  0
 #define LEFT_WALL_INDEX   1
 #define RIGHT_WALL_INDEX  2
-#define TOP_WALL_INDEX    3
-#define PAD_INDEX         4
-#define BALL_INDEX        5
-#define BRICK_START_INDEX 6
+#define PAD_INDEX         3
+#define BALL_INDEX        4
+#define BRICK_START_INDEX 5
 
 #define FOREGROUND_DEPTH 0.1f
 #define GAME_DEPTH       0.5f
@@ -45,7 +44,7 @@ class Level {
     void destroy();
 
     friend static void Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeed /*pixels per microsecond*/,
-                                             const float& padSpeed /*pixels per microsecond*/, glm::vec2& ballDirection);
+                                             const float& padSpeed /*pixels per microsecond*/, glm::vec2& ballDirection, bool& gameOver);
 
   private:
     std::string m_backgroundTexturePath;

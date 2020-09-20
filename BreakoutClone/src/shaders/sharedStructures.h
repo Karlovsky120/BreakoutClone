@@ -18,18 +18,19 @@ struct Vertex {
 };
 
 struct Instance {
-    uint id;
-    vec3 position;
-    vec2 scale;
-    vec2 uvOffset;
-    vec2 uvScale;
-    uint textureIndex;
-    uint health;
+    uint  id;
+    vec2  position;
+    float depth;
+    vec2  scale;
+    vec2  uvOffset;
+    vec2  uvScale;
+    uint  textureIndex;
+    uint  health;
+    uint  maxHealth;
 };
 
 struct UniformData {
-    float inverseWindowWidth;
-    float inverseWindowHeight;
+    vec2 inversedWindowDimensions;
 };
 
 #ifdef CPP_SHADER_STRUCTURE

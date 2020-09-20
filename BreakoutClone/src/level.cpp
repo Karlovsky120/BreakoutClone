@@ -44,8 +44,10 @@ void Level::load() {
 
     // Load transparent texture to position 0
     loadTexture("transparent.png");
+    // Load cracked texture to position 1
+    loadTexture("bricks\\cracks.png");
 
-    m_padTextureId             = loadTexture("bricks/wood.png");
+    m_padTextureId             = loadTexture("pad.png");
     m_ballTextureId            = loadTexture("ball.png");
     m_backgroundTextureId      = loadTexture(m_backgroundTexturePath);
     m_backgroundTextureSmallId = loadTexture(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
@@ -174,63 +176,59 @@ void Level::generateRenderData() {
     float     brickHeight   = (m_windowHeight - ((MAX_ROW_COUNT + 1) * MAX_ROW_SPACING) - bottomPadding) / static_cast<float>(MAX_ROW_COUNT);
     float     playAreaWidth = m_columnCount * brickWidth + (m_columnCount + 1) * m_columnSpacing;
     float     wallWidth     = (m_windowWidth - playAreaWidth) * 0.5f;
-    float     ballRadius    = 0.5f * brickWidth;
+    float     ballRadius    = 0.375f * brickWidth;
     glm::vec2 padDimensions = {playAreaWidth * 0.2f, brickHeight};
 
     float padOffset = m_windowHeight - MAX_ROW_SPACING * 2.0f;
 
+    Instance defaultInstance;
+    defaultInstance.id           = UINT32_MAX;
+    defaultInstance.position     = {0.0f, 0.0f};
+    defaultInstance.depth        = GAME_DEPTH;
+    defaultInstance.scale        = {1.0f, 1.0f};
+    defaultInstance.textureIndex = 0;
+    defaultInstance.uvOffset     = {0.0f, 0.0f};
+    defaultInstance.uvScale      = {1.0f, 1.0f};
+    defaultInstance.maxHealth    = UINT32_MAX;
+    defaultInstance.health       = UINT32_MAX;
+
 #pragma warning(suppress : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value
-    m_instances = std::vector<Instance>(BRICK_START_INDEX + m_brickCount + 1);
+    m_instances = std::vector<Instance>(BRICK_START_INDEX + m_brickCount + 1, defaultInstance);
 
     // Background
-    m_instances[BACKGROUND_INDEX].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f, BACKGROUND_DEPTH};
+    m_instances[BACKGROUND_INDEX].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f};
+    m_instances[BACKGROUND_INDEX].depth        = BACKGROUND_DEPTH;
     m_instances[BACKGROUND_INDEX].scale        = {m_windowWidth, m_windowHeight};
     m_instances[BACKGROUND_INDEX].textureIndex = m_backgroundTextureId;
-    m_instances[BACKGROUND_INDEX].uvOffset     = {0.0f, 0.0f};
-    m_instances[BACKGROUND_INDEX].uvScale      = {1.0f, 1.0f};
-    m_instances[BACKGROUND_INDEX].health       = UINT32_MAX;
 
     // Left wall
-    m_instances[LEFT_WALL_INDEX].position     = {wallWidth * 0.5f, m_windowHeight * 0.5f, GAME_DEPTH};
+    m_instances[LEFT_WALL_INDEX].position     = {wallWidth * 0.5f, m_windowHeight * 0.5f};
+    m_instances[LEFT_WALL_INDEX].depth        = GAME_DEPTH;
     m_instances[LEFT_WALL_INDEX].scale        = {wallWidth, m_windowHeight};
     m_instances[LEFT_WALL_INDEX].textureIndex = m_backgroundTextureSmallId;
     m_instances[LEFT_WALL_INDEX].uvOffset     = {0.0f, 0.0f};
     m_instances[LEFT_WALL_INDEX].uvScale      = {wallWidth / static_cast<float>(m_windowWidth), 1.0f};
-    m_instances[LEFT_WALL_INDEX].health       = UINT32_MAX;
 
     // Right wall
-    m_instances[RIGHT_WALL_INDEX].position     = {static_cast<float>(m_windowWidth) - wallWidth * 0.5f, m_windowHeight * 0.5f, GAME_DEPTH};
+    m_instances[RIGHT_WALL_INDEX].position     = {static_cast<float>(m_windowWidth) - wallWidth * 0.5f, m_windowHeight * 0.5f};
+    m_instances[RIGHT_WALL_INDEX].depth        = GAME_DEPTH;
     m_instances[RIGHT_WALL_INDEX].scale        = {wallWidth, m_windowHeight};
     m_instances[RIGHT_WALL_INDEX].textureIndex = m_backgroundTextureSmallId;
     m_instances[RIGHT_WALL_INDEX].uvOffset     = {m_windowWidth - wallWidth / static_cast<float>(m_windowWidth), 0.0f};
     m_instances[RIGHT_WALL_INDEX].uvScale      = {wallWidth / static_cast<float>(m_windowWidth), 1.0f};
-    m_instances[RIGHT_WALL_INDEX].health       = UINT32_MAX;
-
-    // Top wall
-    m_instances[TOP_WALL_INDEX].position     = {m_windowWidth * 0.5f, 0.0f, GAME_DEPTH};
-    m_instances[TOP_WALL_INDEX].scale        = {m_windowWidth, 0.0f};
-    m_instances[TOP_WALL_INDEX].textureIndex = 0;
-    m_instances[TOP_WALL_INDEX].uvOffset     = {0.0f, 0.0f};
-    m_instances[TOP_WALL_INDEX].uvScale      = {1.0f, 1.0f};
-    m_instances[TOP_WALL_INDEX].health       = UINT32_MAX;
 
     // The pad
-    m_instances[PAD_INDEX].position     = {wallWidth + playAreaWidth * 0.5f, padOffset, GAME_DEPTH};
+    m_instances[PAD_INDEX].position     = {wallWidth + playAreaWidth * 0.5f, padOffset};
+    m_instances[PAD_INDEX].depth        = GAME_DEPTH;
     m_instances[PAD_INDEX].scale        = padDimensions;
     m_instances[PAD_INDEX].textureIndex = m_padTextureId;
-    m_instances[PAD_INDEX].uvOffset     = {0.0f, 0.0f};
-    m_instances[PAD_INDEX].uvScale      = {1.0f, 1.0f};
-    m_instances[PAD_INDEX].health       = UINT32_MAX;
 
     // The ball
-    m_instances[BALL_INDEX].position.x   = wallWidth + playAreaWidth * 0.5f;
+    m_instances[BALL_INDEX].position.x   = m_windowWidth * 0.5f;
     m_instances[BALL_INDEX].position.y   = padOffset - (0.5f * padDimensions.y + ballRadius + 1.0f);
-    m_instances[BALL_INDEX].position.z   = GAME_DEPTH;
+    m_instances[BALL_INDEX].depth        = GAME_DEPTH;
     m_instances[BALL_INDEX].scale        = {2.0f * ballRadius, 2.0f * ballRadius};
     m_instances[BALL_INDEX].textureIndex = m_ballTextureId;
-    m_instances[BALL_INDEX].uvOffset     = {0.0f, 0.0f};
-    m_instances[BALL_INDEX].uvScale      = {1.0f, 1.0f};
-    m_instances[BALL_INDEX].health       = UINT32_MAX;
 
     // Bricks
     uint32_t instanceDataIndex = BRICK_START_INDEX;
@@ -241,26 +239,24 @@ void Level::generateRenderData() {
         float                  offsetX  = wallWidth + m_columnSpacing + 0.5f * brickWidth;
         float                  stepX    = m_columnSpacing + brickWidth;
         for (size_t j = 0; j < brickRow.size(); ++j, offsetX += stepX) {
-            m_instances[instanceDataIndex].position     = {offsetX, offsetY, GAME_DEPTH};
+            m_instances[instanceDataIndex].position     = {offsetX, offsetY};
+            m_instances[instanceDataIndex].depth        = GAME_DEPTH;
             m_instances[instanceDataIndex].scale        = {brickWidth, brickHeight};
             m_instances[instanceDataIndex].textureIndex = m_brickTypes[m_levelLayout[i][j]].textureId;
-            m_instances[instanceDataIndex].uvOffset     = {0.0f, 0.0f};
-            m_instances[instanceDataIndex].uvScale      = {1.0f, 1.0f};
-            m_instances[instanceDataIndex].health       = 1;
+            m_instances[instanceDataIndex].health       = m_brickTypes[m_levelLayout[i][j]].hitPoints;
+            m_instances[instanceDataIndex].maxHealth    = m_brickTypes[m_levelLayout[i][j]].hitPoints;
             ++instanceDataIndex;
         }
     }
 
     // Foreground
     m_foregroundIndex                           = instanceDataIndex;
-    m_instances[m_foregroundIndex].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f, FOREGROUND_DEPTH};
+    m_instances[m_foregroundIndex].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f};
+    m_instances[m_foregroundIndex].depth        = FOREGROUND_DEPTH;
     m_instances[m_foregroundIndex].scale        = {m_windowWidth, m_windowHeight};
     m_instances[m_foregroundIndex].textureIndex = 0;
-    m_instances[m_foregroundIndex].uvOffset     = {0.0f, 0.0f};
-    m_instances[m_foregroundIndex].uvScale      = {1.0f, 1.0f};
-    m_instances[m_foregroundIndex].health       = UINT32_MAX;
 
-    m_instanceDataBufferSize = VECTOR_SIZE_BYTES(m_instances);
+    m_instanceDataBufferSize = VECTOR_SIZE_IN_BYTES(m_instances);
     m_instanceBuffer         = Resources::createBuffer(m_instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     Renderer::nameObject(&m_instanceBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Instance buffer");
