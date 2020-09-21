@@ -40,7 +40,7 @@
 #include <sstream>
 #include <string>
 
-void Level::load(const bool& reset) {
+void Level::load() {
 
     // Load cracked texture to position 0
     loadTexture("bricks\\cracks.png");
@@ -58,11 +58,7 @@ void Level::load(const bool& reset) {
 
     generateRenderData();
 
-    if (reset) {
-        Renderer::resetRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
-    } else {
-        Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
-    }
+    Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_instances.size()));
 }
 
 void Level::updateGPUData() const { Resources::uploadToHostVisibleBuffer(m_instances.data(), m_instanceDataBufferSize, m_instanceBuffer.memory); }
@@ -203,8 +199,6 @@ void Level::generateRenderData() {
     float wallWidth     = (m_windowWidth - playAreaWidth) * 0.5f;
     float ballRadius    = 0.375f * brickWidth;
     float padOffset     = m_windowHeight - MAX_ROW_SPACING * 2.0f;
-
-    printf("%f %f\n", playAreaWidth, wallWidth);
 
     glm::vec2 padDimensions = {playAreaWidth * 0.2f, brickHeight};
 

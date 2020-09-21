@@ -76,7 +76,6 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         glm::vec2 latestReflectedDirection = ballDirection;
         // Pass inverted ball dimensions so minkowski sum is calculcated correctly since the edges are being tested from the inside
         if (detectCollision(ballPosition, -ballScale, latestReflectedDirection, remainingTravelDistance, playAreaCenter, playAreaRect, t)) {
-            printf("%f %f\n", ballDirection.y, latestReflectedDirection.y);
             // If bottom edge is hit
             if (ballDirection.y != latestReflectedDirection.y && latestReflectedDirection.y < 0.0f) {
                 return LevelState::LOST;

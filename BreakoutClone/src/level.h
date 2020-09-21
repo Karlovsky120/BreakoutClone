@@ -43,7 +43,7 @@ struct BrickType {
 
 class Level {
   public:
-    void                   load(const bool& reset = false);
+    void                   load();
     void                   updateGPUData() const;
     std::vector<Instance>& getInstances();
     const glm::vec2        getWindowDimensions() const;

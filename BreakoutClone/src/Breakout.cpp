@@ -11,7 +11,10 @@
 #include <filesystem>
 #include <thread>
 
-void Breakout::run() { gameLoop(); }
+void Breakout::run() {
+    Renderer::showWindow();
+    gameLoop();
+}
 
 Breakout::Breakout() {
     Renderer::initRenderer();
@@ -139,7 +142,7 @@ void Breakout::doGame(const uint32_t& /*frameTime*/) {
             ++m_currentLevelIndex;
             if (m_currentLevelIndex < m_levels.size()) {
                 m_currentLevel = &m_levels[m_currentLevelIndex];
-                m_currentLevel->load(true);
+                m_currentLevel->load();
             } else {
                 m_stateTimeCounter = 0;
                 m_gameState        = GameState::WIN_GAME;

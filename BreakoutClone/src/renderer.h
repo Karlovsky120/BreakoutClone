@@ -37,11 +37,11 @@ class Renderer {
     static const VkQueue&                          getQueue();
 
     static void setWindowTitle(const char* title);
+    static void showWindow();
     void        acquireImage();
     void        renderAndPresentImage();
 
     static void recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
-    static void resetRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
     static void updateTextureArray(std::vector<Image>& textures);
     static void nameObject(void* handle, const VkObjectType& type, const char* name);
 
@@ -98,6 +98,8 @@ class Renderer {
     uint32_t m_currentImageIndex   = UINT32_MAX;
     uint32_t m_currentFrame        = 0;
 
+    bool m_renderCommandBuffersRecorder = false;
+
     VkPipelineStageFlags m_renderSubmitWaitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
     void init();
@@ -124,6 +126,7 @@ class Renderer {
     void setupRenderLoop();
     void createVertexAndIndexBuffers();
     void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& instanceBuffer, const uint32_t& instanceCount) const;
+    void resetRenderCommandBuffers();
 
     const uint32_t       getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const;
     const VkShaderModule loadShader(const char* pathToSource) const;

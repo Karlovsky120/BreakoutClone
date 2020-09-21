@@ -138,6 +138,8 @@ const VkQueue&                          Renderer::getQueue() { return m_renderer
 
 void Renderer::setWindowTitle(const char* title) { SDL_SetWindowTitle(m_renderer->m_window, title); }
 
+void Renderer::showWindow() { SDL_ShowWindow(m_renderer->m_window); }
+
 void Renderer::acquireImage() {
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -165,17 +167,23 @@ void Renderer::renderAndPresentImage() {
 }
 
 void Renderer::recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount) {
+
+    if (getInstance()->m_renderCommandBuffersRecorder) {
+        getInstance()->resetRenderCommandBuffers();
+    }
+
     for (uint32_t i = 0; i < getInstance()->m_swapchainImageCount; ++i) {
         getInstance()->recordRenderCommandBuffer(i, instanceBuffer, instanceCount);
     }
+
+    getInstance()->m_renderCommandBuffersRecorder = true;
 }
 
-void Renderer::resetRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount) {
+void Renderer::resetRenderCommandBuffers() {
     vkFreeCommandBuffers(m_renderer->m_device, m_renderer->m_renderCommandPool, m_renderer->m_swapchainImageCount, m_renderer->m_renderCommandBuffers.data());
 
     m_renderer->m_renderCommandBuffers.clear();
     m_renderer->allocateRenderCommandBuffers();
-    m_renderer->recordRenderCommandBuffers(instanceBuffer, instanceCount);
 }
 
 void Renderer::initSDL() {
@@ -183,7 +191,8 @@ void Renderer::initSDL() {
         throw std::runtime_error("Failed to initialize SDL!");
     }
 
-    m_window = SDL_CreateWindow("Breakout", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_VULKAN);
+    m_window = SDL_CreateWindow("Breakout", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_VULKAN | SDL_WINDOW_HIDDEN);
+
     if (!m_window) {
         throw std::runtime_error("Failed to create SDL window!");
     }
