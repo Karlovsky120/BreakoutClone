@@ -100,7 +100,7 @@ const VkImageMemoryBarrier Resources::createImageMemoryBarrier(const VkImage& im
 const VkSampler Resources::createSampler() {
     VkSamplerCreateInfo createInfo     = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
     createInfo.magFilter               = VK_FILTER_NEAREST;
-    createInfo.minFilter               = VK_FILTER_LINEAR;
+    createInfo.minFilter               = VK_FILTER_NEAREST;
     createInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -271,9 +271,6 @@ const uint32_t Resources::loadTexture(const std::string& pathToTexture, const fl
         imageSize = textureWidth * textureHeight * textureChannelCount;
     }
 
-    m_textureMap[textureMapId] = m_textureMaxId;
-    ++m_textureMaxId;
-
     m_textures.push_back(Resources::createImage({static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight)},
                                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_FORMAT_R8G8B8A8_UNORM,
                                                 VK_IMAGE_ASPECT_COLOR_BIT));
@@ -286,7 +283,7 @@ const uint32_t Resources::loadTexture(const std::string& pathToTexture, const fl
         stbi_image_free(resizedPixels);
     }
 
-    return m_textureMap[textureMapId];
+    return m_textureMap[textureMapId] = m_textureMaxId++;
 }
 
 const uint32_t Resources::getTextureId(const std::string& texturePath, const float& scale) {
@@ -311,6 +308,8 @@ void Resources::cleanup() {
 
     m_textureMap.clear();
 }
+
+std::string Resources::m_resourcesPath = "";
 
 std::map<std::string, uint32_t> Resources::m_textureMap;
 std::vector<Image>              Resources::m_textures;
@@ -401,4 +400,14 @@ const VkDeviceMemory Resources::allocateVulkanObjectMemory(const VkMemoryRequire
     VK_CHECK(vkAllocateMemory(Renderer::getDevice(), &memoryAllocateInfo, nullptr, &memory));
 
     return memory;
+}
+
+const std::string& Resources::getResourcesPath() {
+    if (m_resourcesPath == "") {
+        std::filesystem::path executablePath = std::filesystem::current_path();
+        executablePath += std::string(RESOURCES_FOLDER);
+        m_resourcesPath = executablePath.string();
+    }
+
+    return m_resourcesPath;
 }

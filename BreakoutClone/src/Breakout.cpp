@@ -32,10 +32,9 @@ Breakout::~Breakout() {
 }
 
 void Breakout::loadLevelData() {
-    std::filesystem::path fullPath = std::filesystem::current_path();
-    fullPath += LEVELS_PATH;
-    uint32_t counter = 0;
-    for (const auto& file : std::filesystem::directory_iterator(fullPath)) {
+    uint32_t    counter    = 0;
+    std::string levelsPath = Resources::getResourcesPath() + LEVELS_FOLDER;
+    for (const auto& file : std::filesystem::directory_iterator(levelsPath)) {
         m_levels.push_back(Level(file.path().string().c_str(), counter, WINDOW_WIDTH, WINDOW_HEIGHT));
         ++counter;
     }

@@ -21,7 +21,7 @@
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
-#define STAGING_BUFFER_SIZE 33'554'432 // 32MB
+#define STAGING_BUFFER_SIZE (1 << 25) // 32MB
 
 class Renderer {
   public:
