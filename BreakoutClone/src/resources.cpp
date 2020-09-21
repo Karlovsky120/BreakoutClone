@@ -2,6 +2,30 @@
 
 #include "renderer.h"
 
+#pragma warning(push, 0)
+#pragma warning(disable : 6011)  // Dereferencing NULL pointer *.
+#pragma warning(disable : 6262)  // Function uses '*' bytes of stack: exceeds stacksize '16384'.Consider moving some data to heap.
+#pragma warning(disable : 6308)  // 'realloc' might return null pointer: assigning null pointer to '*', which is passed as an argument to 'realloc', will cause
+                                 // the original memory block to be leaked.
+#pragma warning(disable : 6385)  // Reading invalid data from '*': the readable size is '*' bytes, but '*' bytes may be read.
+#pragma warning(disable : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value.
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
+
+#pragma warning(enable : 26451)
+#pragma warning(enable : 6385)
+#pragma warning(enable : 6308)
+#pragma warning(enable : 6262)
+#pragma warning(enable : 6011)
+#pragma warning(pop)
+
+#include <filesystem>
+#include <string>
+
 const Image Resources::createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat,
                                    const VkImageAspectFlags& aspectMask) {
 
@@ -199,6 +223,98 @@ void Resources::uploadToDeviceLocalImage(const void* data, const uint32_t& image
 
     vkFreeCommandBuffers(device, transferCommandPool, 1, &transferCommandBuffer);
 }
+
+const uint32_t Resources::loadTexture(const std::string& pathToTexture, const float& scale) {
+    std::string textureMapId = pathToTexture + std::to_string(scale);
+
+    auto textureCacheMapEntry = m_textureMap.find(textureMapId);
+    if (textureCacheMapEntry != m_textureMap.end()) {
+        return textureCacheMapEntry->second;
+    }
+
+    std::filesystem::path fullPath = std::filesystem::current_path();
+    fullPath += "\\resources\\textures\\";
+    fullPath += pathToTexture;
+
+    int      textureWidth;
+    int      textureHeight;
+    int      textureChannelCount;
+    stbi_uc* pixels = stbi_load(fullPath.string().c_str(), &textureWidth, &textureHeight, &textureChannelCount, STBI_rgb_alpha);
+
+    if (!pixels) {
+        char error[512];
+        sprintf_s(error, "Failed to load image %s!", pathToTexture.c_str());
+        throw std::runtime_error(error);
+    }
+
+    uint32_t imageSize         = 0;
+    bool     manuallyAllocated = false;
+    stbi_uc* resizedPixels     = nullptr;
+    if (scale > 1.0001f || scale < 0.9999f) {
+        uint32_t newWidth     = static_cast<uint32_t>(textureWidth * scale);
+        uint32_t newHeight    = static_cast<uint32_t>(textureHeight * scale);
+        uint32_t newImageSize = newWidth * newHeight * textureChannelCount;
+
+        // stb is crashing unless I allocate the memory myself
+        resizedPixels = (stbi_uc*)malloc(newImageSize);
+        stbir_resize_uint8(pixels, textureWidth, textureHeight, 0, resizedPixels, newWidth, newHeight, 0, textureChannelCount);
+        stbi_image_free(pixels);
+
+        textureWidth  = newWidth;
+        textureHeight = newHeight;
+        imageSize     = newImageSize;
+
+        pixels = resizedPixels;
+
+        manuallyAllocated = true;
+    } else {
+        imageSize = textureWidth * textureHeight * textureChannelCount;
+    }
+
+    m_textureMap[textureMapId] = m_textureMaxId;
+    ++m_textureMaxId;
+
+    m_textures.push_back(Resources::createImage({static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight)},
+                                                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_FORMAT_R8G8B8A8_UNORM,
+                                                VK_IMAGE_ASPECT_COLOR_BIT));
+
+    Resources::uploadToDeviceLocalImage(pixels, imageSize, m_textures.back(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    if (manuallyAllocated) {
+        free(resizedPixels);
+    } else {
+        stbi_image_free(resizedPixels);
+    }
+
+    return m_textureMap[textureMapId];
+}
+
+const uint32_t Resources::getTextureId(const std::string& texturePath, const float& scale) {
+    if (texturePath == "") {
+        return UINT32_MAX;
+    }
+
+    std::string textureMapId = texturePath + std::to_string(scale);
+    if (m_textureMap.find(textureMapId) != m_textureMap.end()) {
+        return m_textureMap[texturePath + std::to_string(scale)];
+    }
+
+    return loadTexture(texturePath, scale);
+}
+
+const std::vector<Image>& Resources::getTextureArray() { return m_textures; }
+
+void Resources::cleanup() {
+    for (const auto& texture : m_textures) {
+        texture.destroy();
+    }
+
+    m_textureMap.clear();
+}
+
+std::map<std::string, uint32_t> Resources::m_textureMap;
+std::vector<Image>              Resources::m_textures;
+uint32_t                        Resources::m_textureMaxId = 0;
 
 const VkImage Resources::createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat) {
     VkImageCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};

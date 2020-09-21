@@ -34,6 +34,7 @@ struct Instance {
 
 struct UniformData {
     vec2 inversedWindowDimensions;
+    uint crackedTextureId;
 };
 
 #ifdef CPP_SHADER_STRUCTURE

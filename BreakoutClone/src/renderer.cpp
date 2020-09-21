@@ -385,7 +385,7 @@ void Renderer::createDescriptorLayout() {
     descriptorSetLayoutBindings[0].binding            = 0;
     descriptorSetLayoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     descriptorSetLayoutBindings[0].descriptorCount    = 1;
-    descriptorSetLayoutBindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+    descriptorSetLayoutBindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
 
     // Sampled texture array
@@ -614,7 +614,8 @@ void Renderer::createUniformBuffer() {
     m_uniformBuffer = Resources::createBuffer(sizeof(UniformData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     nameObject(&m_uniformBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Uniform buffer");
-    UniformData uniformData = {{1.0f / WINDOW_WIDTH, 1.0f / WINDOW_HEIGHT}};
+
+    UniformData uniformData = {{1.0f / WINDOW_WIDTH, 1.0f / WINDOW_HEIGHT}, Resources::getTextureId(CRACKS_TEXTURE_PATH)};
 
     Resources::uploadToDeviceLocalBuffer(&uniformData, sizeof(uniformData), m_uniformBuffer.buffer);
 }
@@ -690,9 +691,11 @@ void Renderer::createVertexAndIndexBuffers() {
     Resources::uploadToDeviceLocalBuffer(indices.data(), VECTOR_SIZE_IN_BYTES(indices), m_indexBuffer.buffer);
 }
 
-void Renderer::updateTextureArray(std::vector<Image>& textures) {
+void Renderer::updateTextureArray() {
     VkDescriptorImageInfo descriptorImageInfo;
     descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    const std::vector<Image>& textures = Resources::getTextureArray();
 
     std::vector<VkDescriptorImageInfo> descriptorImageInfos;
     size_t                             i = 0;

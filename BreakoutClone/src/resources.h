@@ -2,6 +2,13 @@
 #include "common.h"
 #include "commonExternal.h"
 
+#define PAD_TEXTURE_PATH        "pad.png"
+#define BALL_TEXTURE_PATH       "ball.png"
+#define CRACKS_TEXTURE_PATH     "bricks/cracks.png"
+#define FOREGROUND_TEXTURE_PATH "boards/foreground.png"
+
+#define LEVELS_PATH "/resources/levels/";
+
 struct Buffer {
     VkBuffer       buffer = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
@@ -9,7 +16,7 @@ struct Buffer {
     Buffer(){};
     Buffer(const VkDevice& device, const VkBuffer& buffer, const VkDeviceMemory& memory) : buffer(buffer), memory(memory), device(device) {}
 
-    void destroy() {
+    void destroy() const {
         if (device != VK_NULL_HANDLE) {
             vkDestroyBuffer(device, buffer, nullptr);
             vkFreeMemory(device, memory, nullptr);
@@ -30,7 +37,7 @@ struct Image {
     Image(const VkDevice& device, const VkImage& image, const VkDeviceMemory& memory, const VkImageView& view, const VkExtent2D& size)
         : device(device), image(image), memory(memory), view(view), size(size) {}
 
-    void destroy() {
+    const void destroy() const {
         if (device != VK_NULL_HANDLE) {
             vkDestroyImageView(device, view, nullptr);
             vkDestroyImage(device, image, nullptr);
@@ -53,12 +60,20 @@ class Resources {
     static void            uploadToDeviceLocalBuffer(const void* data, const uint32_t& bufferSize, const VkBuffer& deviceBuffer);
     static void            uploadToDeviceLocalImage(const void* data, const uint32_t& imageSize, const Image& deviceImage, const VkImageLayout& initialLayout,
                                                     const VkImageLayout& finalLayout);
+    static const uint32_t  getTextureId(const std::string& texturePath, const float& scale = 1.0f);
+    static const std::vector<Image>& getTextureArray();
+    static void                      cleanup();
 
   private:
+    static std::map<std::string, uint32_t> m_textureMap;
+    static std::vector<Image>              m_textures;
+    static uint32_t                        m_textureMaxId;
+
     static const VkImage        createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat);
     static const VkImageView    createImageView(const VkImage& image, const VkFormat& format, const VkImageAspectFlags& aspectMask);
     static const VkBuffer       createBuffer(const VkDeviceSize& bufferSize, const VkBufferUsageFlags& bufferUsageFlags);
     static const uint32_t       findMemoryType(const uint32_t& memoryTypeBits, const VkMemoryPropertyFlags& memoryPropertyFlags);
     static const VkDeviceMemory allocateVulkanObjectMemory(const VkMemoryRequirements& memoryRequirements, const VkMemoryPropertyFlags& memoryPropertyFlags);
     static const VkImageMemoryBarrier createImageMemoryBarrier(const VkImage& image, const VkImageLayout& oldLayout, const VkImageLayout& newLayout);
+    static const uint32_t             loadTexture(const std::string& pathToTexture, const float& scale = 1.0f);
 };

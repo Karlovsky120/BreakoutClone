@@ -42,7 +42,7 @@ class Renderer {
     void        renderAndPresentImage();
 
     static void recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
-    static void updateTextureArray(std::vector<Image>& textures);
+    static void updateTextureArray();
     static void nameObject(void* handle, const VkObjectType& type, const char* name);
 
     void destroy();

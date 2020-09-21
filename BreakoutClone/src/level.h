@@ -35,7 +35,6 @@ struct BrickType {
     uint32_t    id             = 0;
     uint32_t    hitPoints      = 0;
     int32_t     breakScore     = 0;
-    uint32_t    textureId      = 0;
     std::string texturePath    = "";
     std::string hitSoundPath   = "";
     std::string breakSoundPath = "";
@@ -77,14 +76,6 @@ class Level {
 
     uint32_t m_foregroundIndex = 0;
 
-    uint32_t m_transparentTextureId = 0;
-
-    uint32_t m_padTextureId;
-    uint32_t m_ballTextureId;
-    uint32_t m_foregroundTextureId;
-    uint32_t m_backgroundTextureId;
-    uint32_t m_backgroundTextureSmallId;
-
     glm::vec2 m_padInitialPosition;
     glm::vec2 m_ballInitialPosition;
 
@@ -96,16 +87,11 @@ class Level {
     std::vector<Instance>              m_instances;
     std::vector<std::vector<uint32_t>> m_levelLayout;
 
-    std::map<uint32_t, BrickType>   m_brickTypes;
-    std::map<std::string, uint32_t> m_textureCacheMap;
-
-    std::vector<Image> m_textures;
+    std::map<uint32_t, BrickType> m_brickTypes;
 
     Buffer   m_instanceBuffer;
     uint32_t m_instanceDataBufferSize;
 
     void parseXml(const char* fullPath);
     void generateRenderData();
-
-    uint32_t loadTexture(const std::string& pathToTexture, const float& scale = 1.0f);
 };

@@ -26,12 +26,14 @@ Breakout::~Breakout() {
         level.destroy();
     }
 
+    Resources::cleanup();
+
     Renderer::getInstance()->destroy();
 }
 
 void Breakout::loadLevelData() {
     std::filesystem::path fullPath = std::filesystem::current_path();
-    fullPath += "\\resources\\levels\\";
+    fullPath += LEVELS_PATH;
     uint32_t counter = 0;
     for (const auto& file : std::filesystem::directory_iterator(fullPath)) {
         m_levels.push_back(Level(file.path().string().c_str(), counter, WINDOW_WIDTH, WINDOW_HEIGHT));
