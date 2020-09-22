@@ -98,7 +98,7 @@ class Renderer {
     uint32_t m_currentImageIndex   = UINT32_MAX;
     uint32_t m_currentFrame        = 0;
 
-    bool m_renderCommandBuffersRecorder = false;
+    bool m_renderCommandBuffersRecorded = false;
 
     VkPipelineStageFlags m_renderSubmitWaitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 

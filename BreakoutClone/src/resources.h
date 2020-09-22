@@ -9,7 +9,22 @@
 
 #define RESOURCES_FOLDER "\\resources\\"
 
-#define LEVELS_FOLDER "levels\\";
+#define LEVELS_FOLDER "levels\\"
+#define UI_FOLDER     "ui\\"
+
+#define FOLDER_UI_NUMBER(number) UI_FOLDER + std::to_string(number) + ".png"
+
+#define FOLDER_UI_GAMEOVER      UI_FOLDER "gameOver.png"
+#define FOLDER_UI_LEVELCOMPLETE UI_FOLDER "levelComplete.png"
+#define FOLDER_UI_LOADINGLEVEL  UI_FOLDER "loadingLevel.png"
+#define FOLDER_UI_VICTORY       UI_FOLDER "victory.png"
+
+#define FOLDER_UI_LEVEL UI_FOLDER "level.png"
+#define FOLDER_UI_LIVES UI_FOLDER "lives.png"
+#define FOLDER_UI_SCORE UI_FOLDER "score.png"
+
+#define FOLDER_UI_RELEASE UI_FOLDER "pressSpaceToReleaseTheBall.png"
+#define FOLDER_UI_TRY     UI_FOLDER "pressSpaceToTryAgain.png"
 
 struct Buffer {
     VkBuffer       buffer = VK_NULL_HANDLE;

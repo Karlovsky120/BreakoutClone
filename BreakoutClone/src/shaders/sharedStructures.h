@@ -13,7 +13,7 @@
 #define uint uint32_t
 #endif
 
-#define MAX_TEXTURE_COUNT 16
+#define MAX_TEXTURE_COUNT 64
 
 struct Vertex {
     vec2 position;

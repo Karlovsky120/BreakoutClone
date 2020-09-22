@@ -168,7 +168,7 @@ void Renderer::renderAndPresentImage() {
 
 void Renderer::recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount) {
 
-    if (getInstance()->m_renderCommandBuffersRecorder) {
+    if (getInstance()->m_renderCommandBuffersRecorded) {
         getInstance()->resetRenderCommandBuffers();
     }
 
@@ -176,10 +176,11 @@ void Renderer::recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const 
         getInstance()->recordRenderCommandBuffer(i, instanceBuffer, instanceCount);
     }
 
-    getInstance()->m_renderCommandBuffersRecorder = true;
+    getInstance()->m_renderCommandBuffersRecorded = true;
 }
 
 void Renderer::resetRenderCommandBuffers() {
+    vkDeviceWaitIdle(m_device);
     vkFreeCommandBuffers(m_renderer->m_device, m_renderer->m_renderCommandPool, m_renderer->m_swapchainImageCount, m_renderer->m_renderCommandBuffers.data());
 
     m_renderer->m_renderCommandBuffers.clear();

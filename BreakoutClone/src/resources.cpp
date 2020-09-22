@@ -1,5 +1,6 @@
 #include "resources.h"
 
+#include "breakout.h"
 #include "renderer.h"
 
 #pragma warning(push, 0)
@@ -281,6 +282,12 @@ const uint32_t Resources::loadTexture(const std::string& pathToTexture, const fl
         free(resizedPixels);
     } else {
         stbi_image_free(resizedPixels);
+    }
+
+    const Level* activeLevel = Breakout::getActiveLevel();
+    if (activeLevel && activeLevel->isCommandBufferRecorded()) {
+        Renderer::updateTextureArray();
+        activeLevel->updateCommandBuffers();
     }
 
     return m_textureMap[textureMapId] = m_textureMaxId++;

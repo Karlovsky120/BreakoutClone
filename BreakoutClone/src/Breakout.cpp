@@ -16,6 +16,10 @@ void Breakout::run() {
     gameLoop();
 }
 
+const Level* Breakout::getActiveLevel() { return m_currentLevel; }
+
+Level* Breakout::m_currentLevel;
+
 Breakout::Breakout() {
     Renderer::initRenderer();
     loadLevelData();
@@ -75,8 +79,10 @@ void Breakout::doGame(const uint32_t& /*frameTime*/) {
     switch (m_gameState) {
     case GameState::BEGIN_LEVEL: {
         if (m_stateTimeCounter < BEGIN_LEVEL_BEFORE_FADE + BEGIN_LEVEL_FADE) {
-            float alpha                                  = fade(BEGIN_LEVEL_BEFORE_FADE, -BEGIN_LEVEL_FADE, m_stateTimeCounter);
-            m_currentLevel->getForeground().textureAlpha = alpha;
+            float alpha = fade(BEGIN_LEVEL_BEFORE_FADE, -BEGIN_LEVEL_FADE, m_stateTimeCounter);
+            m_currentLevel->setForegroundVisibility(alpha);
+            m_currentLevel->setTitleVisibility(alpha);
+            m_currentLevel->setHUDVisibility(1 - alpha);
         } else {
             m_gameState = GameState::BALL_ATTACHED;
         }
@@ -98,7 +104,8 @@ void Breakout::doGame(const uint32_t& /*frameTime*/) {
             break;
         }
         case LevelState::LOST: {
-            if (m_currentLevel->loseLife() == 0) {
+            --m_lifeCount;
+            if (m_lifeCount == 0) {
                 m_stateTimeCounter = 0;
                 m_gameState        = GameState::LOSE_GAME;
             } else {
@@ -143,7 +150,7 @@ void Breakout::doGame(const uint32_t& /*frameTime*/) {
             ++m_currentLevelIndex;
             if (m_currentLevelIndex < m_levels.size()) {
                 m_currentLevel = &m_levels[m_currentLevelIndex];
-                m_currentLevel->load();
+                // m_currentLevel->load();
             } else {
                 m_stateTimeCounter = 0;
                 m_gameState        = GameState::WIN_GAME;
@@ -176,12 +183,14 @@ const uint32_t Breakout::getFrametime() {
 }
 
 void Breakout::gameLoop() {
-    m_time              = std::chrono::high_resolution_clock::now();
-    m_gameState         = GameState::BEGIN_LEVEL;
-    m_stateTimeCounter  = 0;
-    m_currentLevelIndex = 0;
-    m_currentLevel      = &m_levels[0];
-    m_currentLevel->load();
+    m_time             = std::chrono::high_resolution_clock::now();
+    m_lifeCount        = START_LIFE_COUNT;
+    m_gameState        = GameState::BEGIN_LEVEL;
+    m_stateTimeCounter = 0;
+    m_currentLevel     = &m_levels[m_currentLevelIndex];
+    m_currentLevel->load(m_lifeCount, m_score, m_currentLevelIndex + 1);
+    m_currentLevel->setTitleVisibility(1.0f);
+    m_currentLevel->setTitle(FOLDER_UI_LOADINGLEVEL);
 
     while (!m_quit) {
         pollEvents();
