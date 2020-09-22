@@ -90,7 +90,7 @@ void Breakout::doGame(const uint32_t& frameTime) {
         break;
     }
     case GameState::BALL_ATTACHED: {
-        Physics::resolveFrame(frameTime, *m_currentLevel, 0.0f, m_padControl, m_ballDirection);
+        Physics::resolveFrame(frameTime, *m_currentLevel, 0.0f, m_padControl, m_ballDirection, m_collisionInfo);
         if (m_keyPressed[SDLK_SPACE]) {
             m_ballDirection = {0.0f, -1.0f};
             m_currentLevel->setSubtitleVisibility(0.0f);
@@ -99,11 +99,31 @@ void Breakout::doGame(const uint32_t& frameTime) {
         break;
     }
     case GameState::PLAYING: {
-        switch (Physics::resolveFrame(frameTime, *m_currentLevel, 1.0f, m_padControl, m_ballDirection)) {
-        case LevelState::HUGE_SUCCESS: {
-            m_stateTimeCounter = 0;
-            m_currentLevel->setTitle(FOLDER_UI_VICTORY);
-            m_gameState = GameState::WIN_LEVEL;
+        switch (Physics::resolveFrame(frameTime, *m_currentLevel, 1.0f, m_padControl, m_ballDirection, m_collisionInfo)) {
+        case LevelState::STILL_ALIVE: {
+            Instance* bricks = &m_currentLevel->getInstances()[BRICK_START_INDEX];
+            for (CollisionData& collisionData : m_collisionInfo) {
+                switch (collisionData.type) {
+                case CollisionType::BRICK: {
+                    Instance& brick = bricks[collisionData.hitIndex];
+                    if (brick.maxHealth < UINT32_MAX) {
+                        --brick.health;
+                        if (brick.health == 0) {
+                            const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
+                            m_score += brickType.breakScore;
+                            m_currentLevel->setScore(m_score);
+                            m_currentLevel->destroyBrick();
+                        }
+                    }
+                }
+                }
+            }
+
+            if (m_currentLevel->getRemainingBrickCount() == 0) {
+                m_stateTimeCounter = 0;
+                m_currentLevel->setTitle(FOLDER_UI_VICTORY);
+                m_gameState = GameState::WIN_LEVEL;
+            }
             break;
         }
         case LevelState::LOST: {
@@ -119,9 +139,6 @@ void Breakout::doGame(const uint32_t& frameTime) {
                 m_currentLevel->setSubtitleVisibility(1.0f);
                 m_gameState = GameState::BALL_ATTACHED;
             }
-            break;
-        }
-        case LevelState::STILL_ALIVE: {
             break;
         }
         }
@@ -233,6 +250,8 @@ void Breakout::gameLoop() {
         m_stateTimeCounter += m_operatingFrametime;
         m_timeCounter += m_operatingFrametime;
         ++m_frameCount;
+
+        m_collisionInfo.clear();
     }
 
     vkDeviceWaitIdle(Renderer::getDevice());

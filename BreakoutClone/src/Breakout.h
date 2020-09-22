@@ -39,6 +39,8 @@ class Breakout {
     uint32_t m_score     = 0;
     uint32_t m_lifeCount = START_LIFE_COUNT;
 
+    std::vector<CollisionData> m_collisionInfo;
+
     float m_padControl = 0.0f;
 
     GameState m_gameState = GameState::BEGIN_LEVEL;

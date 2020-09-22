@@ -101,6 +101,8 @@ const uint32_t& Level::destroyBrick() {
     return m_inUse.remainingBrickCount;
 }
 
+const BrickType& Level::getBrickData(const uint32_t& id) const { return m_brickTypes.find(id)->second; }
+
 Level::Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight)
     : m_levelIndex(levelIndex), m_windowWidth(windowWidth), m_windowHeight(windowHeight) {
     parseXml(fullPath);
@@ -277,6 +279,7 @@ void Level::generateRenderData() {
         float                  stepX    = m_columnSpacing + brickWidth;
         for (size_t j = 0; j < brickRow.size(); ++j, offsetX += stepX) {
             const uint32_t brickMaxHealth                      = m_brickTypes[m_levelLayout[i][j]].hitPoints;
+            m_backup.instances[instanceDataIndex].id           = m_brickTypes[m_levelLayout[i][j]].id;
             m_backup.instances[instanceDataIndex].position     = {offsetX, offsetY};
             m_backup.instances[instanceDataIndex].depth        = GAME_DEPTH;
             m_backup.instances[instanceDataIndex].scale        = {brickWidth, brickHeight};

@@ -15,10 +15,19 @@ class Level;
 
 enum class LevelState { STILL_ALIVE, HUGE_SUCCESS, LOST, CAKE };
 
+enum class CollisionType { NONE, BRICK, PAD, WALL };
+
+struct CollisionData {
+    CollisionType type = CollisionType::NONE;
+    uint32_t      hitIndex;
+    uint32_t      collisionTime;
+};
+
 class Physics {
   public:
     static LevelState resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeedModifier /*pixels per microsecond*/,
-                                   const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection);
+                                   const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection,
+                                   std::vector<CollisionData>& collisionInfo);
 
   private:
     static bool detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t);

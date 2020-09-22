@@ -7,7 +7,8 @@
 #define SIGNUM(x)              ((x > 0.0) - (x < 0.0))
 
 LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeedModifier /*pixels per microsecond*/,
-                                 const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection) {
+                                 const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection,
+                                 std::vector<CollisionData>& collisionInfo) {
     std::vector<Instance>& instances = level.getInstances();
 
     glm::vec2& ballPosition = instances[BALL_INDEX].position;
@@ -58,16 +59,18 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
     }
 
     float remainingTravelDistance = ballSpeed * frameTime;
+    float travelTime              = 0;
     while (remainingTravelDistance > 0.0f) {
-        float     minimalT                    = 2.0f;
-        glm::vec2 reflectedDirectionOfClosest = ballDirection; // If no redirection is triggered
-        glm::vec2 ballTravelPath              = ballDirection * remainingTravelDistance;
+        CollisionData collisionData;
+        float         minimalT                    = 2.0f;
+        glm::vec2     reflectedDirectionOfClosest = ballDirection; // If no redirection is triggered
+        glm::vec2     ballTravelPath              = ballDirection * remainingTravelDistance;
 
         float t;
 
         glm::vec2 windowDimensions = level.getWindowDimensions();
-        glm::vec2 playAreaCenter   = {windowDimensions.x * 0.5f, windowDimensions.y * 0.5f + 3.0f * ballRadius};
-        glm::vec2 playAreaRect     = {windowDimensions.x - (2.0f * leftWallEdge), windowDimensions.y + 6.0f * ballRadius};
+        glm::vec2 playAreaCenter   = {windowDimensions.x * 0.5f, windowDimensions.y * 0.5f};
+        glm::vec2 playAreaRect     = {windowDimensions.x - (2.0f * leftWallEdge), windowDimensions.y};
 
         // The walls
         glm::vec2 latestReflectedDirection = ballDirection;
@@ -80,11 +83,13 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
 
             minimalT                    = t < minimalT ? t : minimalT;
             reflectedDirectionOfClosest = latestReflectedDirection;
+            collisionData.type          = CollisionType::WALL;
         }
 
         // The pad
         if (detectCollision(ballPosition, ballScale, latestReflectedDirection, remainingTravelDistance, padPosition, padScale, t)) {
             if (t < minimalT) {
+                collisionData.type = CollisionType::PAD;
                 if (ballDirection.y == -latestReflectedDirection.y) {
                     float collisionPoint        = (ballPosition + ballTravelPath * (ballRadius + t)).x;
                     float padLeftCorner         = padPosition.x - 0.5f * padScale.x;
@@ -103,17 +108,15 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         for (size_t i = 0; i < brickCount; ++i) {
             if (bricks[i].health > 0 &&
                 detectCollision(ballPosition, ballScale, latestReflectedDirection, remainingTravelDistance, bricks[i].position, bricks[i].scale, t)) {
+
                 minimalT                    = t < minimalT ? t : minimalT;
                 reflectedDirectionOfClosest = latestReflectedDirection;
                 hitIndex                    = i;
             }
         }
 
-        if (hitIndex != UINT32_MAX && bricks[hitIndex].health != UINT32_MAX) {
-            --bricks[hitIndex].health;
-            if (bricks[hitIndex].health == 0) {
-                level.destroyBrick();
-            }
+        if (hitIndex != UINT32_MAX) {
+            collisionData.type = CollisionType::BRICK;
         }
 
         minimalT = minimalT > 1.0f ? 1.0f : minimalT;
@@ -125,14 +128,20 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         }
 
         ballPosition += ballTravelPath * minimalT;
-        remainingTravelDistance -= remainingTravelDistance * minimalT;
+        float distanceTraveled = remainingTravelDistance * minimalT;
+        remainingTravelDistance -= distanceTraveled;
+
+        if (collisionData.type == CollisionType::BRICK) {
+            collisionData.hitIndex      = hitIndex;
+            collisionData.collisionTime = distanceTraveled / ballSpeed;
+        }
+
+        if (collisionData.type != CollisionType::NONE) {
+            collisionInfo.push_back(collisionData);
+        }
     }
 
-    if (level.getRemainingBrickCount() > 0) {
-        return LevelState::STILL_ALIVE;
-    }
-
-    return LevelState::HUGE_SUCCESS;
+    return LevelState::STILL_ALIVE;
 }
 
 bool Physics::detectCollision(const glm::vec2& center1, const glm::vec2& rect1, glm::vec2& ballDirection, const float& ballSpeed, const glm::vec2& center2,

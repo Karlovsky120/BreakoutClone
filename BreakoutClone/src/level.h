@@ -66,8 +66,8 @@ class Level {
     const float&           getBasePadSpeed() const;
     const float&           getBaseBallSpeed() const;
     const uint32_t&        destroyBrick();
-    // glm::vec2&             getBallDirection();
-    Instance& getForeground();
+    const BrickType&       getBrickData(const uint32_t& id) const;
+    Instance&              getForeground();
 
     const bool& isCommandBufferRecorded() const;
     void        updateCommandBuffers() const;
