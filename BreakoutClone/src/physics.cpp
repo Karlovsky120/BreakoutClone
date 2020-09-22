@@ -7,8 +7,7 @@
 #define SIGNUM(x)              ((x > 0.0) - (x < 0.0))
 
 LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeedModifier /*pixels per microsecond*/,
-                                 const float& padSpeedModifier /*pixels per microsecond*/) {
-
+                                 const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection) {
     std::vector<Instance>& instances = level.getInstances();
 
     glm::vec2& ballPosition = instances[BALL_INDEX].position;
@@ -58,9 +57,7 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         return LevelState::STILL_ALIVE;
     }
 
-    float      remainingTravelDistance = ballSpeed * frameTime;
-    glm::vec2& ballDirection           = level.getBallDirection();
-
+    float remainingTravelDistance = ballSpeed * frameTime;
     while (remainingTravelDistance > 0.0f) {
         float     minimalT                    = 2.0f;
         glm::vec2 reflectedDirectionOfClosest = ballDirection; // If no redirection is triggered

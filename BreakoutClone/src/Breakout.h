@@ -5,8 +5,8 @@
 
 #include <chrono>
 
-// In frames per second. Set to 0 for uncapped.
-#define TARGET_FRAMERATE 200
+// In frames per second. Set to 0 for uncapped
+#define TARGET_FRAMERATE 240
 
 #define START_LIFE_COUNT 3
 
@@ -27,7 +27,7 @@ class Breakout {
     ~Breakout();
 
   private:
-    uint32_t m_targetFrameTime = 1'000'000 / TARGET_FRAMERATE;
+    uint32_t m_targetFrameTime = TARGET_FRAMERATE == 0 ? 0 : 1'000'000 / TARGET_FRAMERATE;
     uint32_t m_timeCounter     = 0;
     uint32_t m_frameCount      = 0;
 
@@ -44,6 +44,7 @@ class Breakout {
     GameState m_gameState = GameState::BEGIN_LEVEL;
 
     static Level* m_currentLevel;
+    glm::vec2     m_ballDirection;
 
     std::chrono::high_resolution_clock::time_point m_time;
 
@@ -51,6 +52,7 @@ class Breakout {
     std::map<SDL_Keycode, bool> m_keyPressed = {};
 
     void loadLevelData();
+    void setupLevel(const uint32_t& lifeCount, const uint32_t& score, const uint32_t& levelIndex);
 
     void           pollEvents();
     void           doGame(const uint32_t& frameTime);

@@ -18,7 +18,7 @@ enum class LevelState { STILL_ALIVE, HUGE_SUCCESS, LOST, CAKE };
 class Physics {
   public:
     static LevelState resolveFrame(const uint32_t& frameTime /*microseconds*/, Level& level, const float& ballSpeedModifier /*pixels per microsecond*/,
-                                   const float& padSpeedModifier /*pixels per microsecond*/);
+                                   const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection);
 
   private:
     static bool detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t);

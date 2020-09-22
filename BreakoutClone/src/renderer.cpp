@@ -181,10 +181,10 @@ void Renderer::recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const 
 
 void Renderer::resetRenderCommandBuffers() {
     vkDeviceWaitIdle(m_device);
-    vkFreeCommandBuffers(m_renderer->m_device, m_renderer->m_renderCommandPool, m_renderer->m_swapchainImageCount, m_renderer->m_renderCommandBuffers.data());
+    vkFreeCommandBuffers(m_device, m_renderCommandPool, m_swapchainImageCount, m_renderCommandBuffers.data());
 
-    m_renderer->m_renderCommandBuffers.clear();
-    m_renderer->allocateRenderCommandBuffers();
+    m_renderCommandBuffers.clear();
+    allocateRenderCommandBuffers();
 }
 
 void Renderer::initSDL() {
@@ -719,6 +719,7 @@ void Renderer::updateTextureArray() {
     writeDescriptorSet.pImageInfo           = descriptorImageInfos.data();
     writeDescriptorSet.dstSet               = m_renderer->m_descriptorSet;
 
+    vkDeviceWaitIdle(m_renderer->m_device);
     vkUpdateDescriptorSets(m_renderer->m_device, 1, &writeDescriptorSet, 0, nullptr);
 }
 

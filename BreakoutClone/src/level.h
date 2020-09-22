@@ -48,6 +48,13 @@ struct BrickType {
     std::string breakSoundPath = "";
 };
 
+struct DynamicData {
+    uint32_t              remainingBrickCount = 0;
+    glm::vec2             ballDirection       = {0.0f, 0.0f};
+    std::vector<Instance> instances;
+    bool                  commandBufferRecorded = false;
+};
+
 class Level {
   public:
     void                   load(const uint32_t& lifeCount, const uint32_t& score, const uint32_t& levelIndex);
@@ -59,8 +66,8 @@ class Level {
     const float&           getBasePadSpeed() const;
     const float&           getBaseBallSpeed() const;
     const uint32_t&        destroyBrick();
-    glm::vec2&             getBallDirection();
-    Instance&              getForeground();
+    // glm::vec2&             getBallDirection();
+    Instance& getForeground();
 
     const bool& isCommandBufferRecorded() const;
     void        updateCommandBuffers() const;
@@ -83,14 +90,16 @@ class Level {
   private:
     std::string m_backgroundTexturePath = "";
 
+    DynamicData m_backup;
+    DynamicData m_inUse;
+
     uint32_t m_rowCount      = 0;
     uint32_t m_columnCount   = 0;
     uint32_t m_rowSpacing    = 0;
     uint32_t m_columnSpacing = 0;
 
-    uint32_t m_levelIndex          = 0;
-    uint32_t m_totalBrickCount     = 0;
-    uint32_t m_remainingBrickCount = 0;
+    uint32_t m_levelIndex      = 0;
+    uint32_t m_totalBrickCount = 0;
 
     uint32_t m_windowWidth  = 0;
     uint32_t m_windowHeight = 0;
@@ -115,17 +124,12 @@ class Level {
     float m_basePadSpeed;
     float m_baseBallSpeed;
 
-    glm::vec2 m_ballDirection = {0.0f, 0.0f};
-
-    std::vector<Instance>              m_instances;
     std::vector<std::vector<uint32_t>> m_levelLayout;
 
     std::map<uint32_t, BrickType> m_brickTypes;
 
     Buffer   m_instanceBuffer;
     uint32_t m_instanceDataBufferSize;
-
-    bool m_commandBufferRecorded = false;
 
     void setNumber(const uint32_t& instanceIndex, const uint32_t& digitCount, uint32_t number);
 
