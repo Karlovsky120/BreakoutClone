@@ -90,6 +90,7 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         if (detectCollision(ballPosition, ballScale, latestReflectedDirection, remainingTravelDistance, padPosition, padScale, t)) {
             if (t < minimalT) {
                 collisionData.type = CollisionType::PAD;
+                minimalT           = t;
                 if (ballDirection.y == -latestReflectedDirection.y) {
                     float collisionPoint        = (ballPosition + ballTravelPath * (ballRadius + t)).x;
                     float padLeftCorner         = padPosition.x - 0.5f * padScale.x;
@@ -109,14 +110,11 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
             if (bricks[i].health > 0 &&
                 detectCollision(ballPosition, ballScale, latestReflectedDirection, remainingTravelDistance, bricks[i].position, bricks[i].scale, t)) {
 
+                collisionData.type          = CollisionType::BRICK;
                 minimalT                    = t < minimalT ? t : minimalT;
                 reflectedDirectionOfClosest = latestReflectedDirection;
                 hitIndex                    = i;
             }
-        }
-
-        if (hitIndex != UINT32_MAX) {
-            collisionData.type = CollisionType::BRICK;
         }
 
         minimalT = minimalT > 1.0f ? 1.0f : minimalT;
@@ -131,9 +129,18 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         float distanceTraveled = remainingTravelDistance * minimalT;
         remainingTravelDistance -= distanceTraveled;
 
-        if (collisionData.type == CollisionType::BRICK) {
-            collisionData.hitIndex      = hitIndex;
-            collisionData.collisionTime = distanceTraveled / ballSpeed;
+        switch (collisionData.type) {
+        case CollisionType::BRICK: {
+            collisionData.hitIndex = hitIndex;
+        }
+        case CollisionType::PAD:
+        case CollisionType::WALL: {
+            if (distanceTraveled < 0) {
+                collisionData.collisionTime = 0;
+            } else {
+                collisionData.collisionTime = distanceTraveled / ballSpeed;
+            }
+        }
         }
 
         if (collisionData.type != CollisionType::NONE) {

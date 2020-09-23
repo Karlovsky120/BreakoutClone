@@ -23,6 +23,7 @@ Level* Breakout::m_currentLevel;
 
 Breakout::Breakout() {
     Renderer::initRenderer();
+    SoundManager::init();
     loadLevelData();
 }
 
@@ -32,7 +33,7 @@ Breakout::~Breakout() {
     }
 
     Resources::cleanup();
-
+    SoundManager::deinit();
     Renderer::getInstance()->destroy();
 }
 
@@ -93,7 +94,8 @@ void Breakout::doGame(const uint32_t& frameTime) {
     case GameState::BALL_ATTACHED: {
         Physics::resolveFrame(frameTime, *m_currentLevel, 0.0f, m_padControl, m_ballDirection, m_collisionInfo);
         if (m_keyPressed[SDLK_SPACE]) {
-            m_ballDirection = {0.0f, -1.0f};
+            m_ballDirection = m_currentLevel->getStartingBallDirection();
+            //{0.0f, -1.0f};
             m_currentLevel->setSubtitleVisibility(0.0f);
             m_gameState = GameState::PLAYING;
         }
@@ -109,7 +111,7 @@ void Breakout::doGame(const uint32_t& frameTime) {
                     Instance& brick = bricks[collisionData.hitIndex];
                     if (brick.maxHealth < UINT32_MAX) {
                         --brick.health;
-                        if (brick.health == 0) {
+                        if (brick.health <= 0) {
                             const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
                             m_score += brickType.breakScore;
                             m_currentLevel->setScore(m_score);
@@ -245,13 +247,49 @@ void Breakout::gameLoop() {
         Renderer::getInstance()->acquireImage();
         Renderer::getInstance()->renderAndPresentImage();
 
-        int32_t remainingFrameTime = m_operatingFrametime - frameTime;
-        std::this_thread::sleep_for(std::chrono::microseconds(remainingFrameTime));
+        int32_t  remainingFrameTime = m_operatingFrametime - frameTime;
+        uint32_t elapsedFrametime   = frameTime;
 
         m_stateTimeCounter += m_operatingFrametime;
         m_timeCounter += m_operatingFrametime;
         ++m_frameCount;
 
+        Instance* bricks = &m_currentLevel->getInstances()[BRICK_START_INDEX];
+        for (const CollisionData& collisionData : m_collisionInfo) {
+            uint32_t collisionTime = collisionData.collisionTime;
+            if (m_targetFrameTime != 0) {
+                if (collisionTime > elapsedFrametime) {
+                    std::this_thread::sleep_for(std::chrono::microseconds(collisionTime - elapsedFrametime));
+                    elapsedFrametime = collisionTime;
+                }
+            }
+
+            switch (collisionData.type) {
+            case CollisionType::WALL: {
+                SoundManager::playSound(SOUND_WALL);
+                break;
+            }
+            case CollisionType::PAD: {
+                SoundManager::playSound(SOUND_PAD);
+                break;
+            }
+            case CollisionType::BRICK: {
+                const Instance&  brick     = bricks[collisionData.hitIndex];
+                const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
+                std::string      soundId;
+                if (brick.health == 0) {
+                    SoundManager::playSound(brickType.breakSoundPath);
+                } else {
+                    SoundManager::playSound(brickType.hitSoundPath);
+                }
+                break;
+            }
+            }
+        }
+
+        if (m_operatingFrametime > elapsedFrametime) {
+            std::this_thread::sleep_for(std::chrono::microseconds(m_operatingFrametime - elapsedFrametime));
+        }
         m_collisionInfo.clear();
     }
 

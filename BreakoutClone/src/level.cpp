@@ -89,6 +89,11 @@ void Level::setHUDVisibility(const float& alpha) {
     }
 }
 
+const glm::vec2 Level::getStartingBallDirection() {
+    float padXOffset = m_inUse.instances[PAD_INDEX].position.x - m_wallWidth - m_playAreaWidth * 0.5f;
+    return glm::normalize(glm::vec2(padXOffset * 1.2f, -m_playAreaWidth));
+}
+
 void Level::setLifeCount(const uint32_t& lifeCount) { setNumber(m_livesCountStartIndex, LIFE_COUNT_DIGITS, lifeCount); }
 
 void Level::resetPadAndBall() {
@@ -153,7 +158,9 @@ void Level::parseXml(const char* fullPath) {
             brickTypeElement->FindAttribute("HitPoints")->QueryUnsignedValue(&brick.hitPoints);
         }
 
-        brick.hitSoundPath = brickTypeElement->FindAttribute("HitSound")->Value();
+        if (brickTypeElement->FindAttribute("HitSound")) {
+            brick.hitSoundPath = brickTypeElement->FindAttribute("HitSound")->Value();
+        }
 
         if (brickTypeElement->FindAttribute("BreakSound")) {
             brick.breakSoundPath = brickTypeElement->FindAttribute("BreakSound")->Value();
@@ -173,7 +180,7 @@ void Level::parseXml(const char* fullPath) {
     if (layoutData[0] == '\n') {
         ++start;
     }
-    if (layoutData[layoutData.length() - 1] == '\n') {
+    while (layoutData[end] == '\n' || layoutData[end] == ' ') {
         --end;
     }
     layoutData = layoutData.substr(start, end);
@@ -207,15 +214,15 @@ void Level::generateRenderData() {
     float brickWidth    = (m_windowWidth - (MAX_COLUMN_COUNT + 1) * MAX_COLUMN_SPACING) / static_cast<float>(MAX_COLUMN_COUNT);
     float bottomPadding = MAX_COLUMN_SPACING * 15;
     float brickHeight   = (m_windowHeight - ((MAX_ROW_COUNT + 1) * MAX_ROW_SPACING) - bottomPadding) / static_cast<float>(MAX_ROW_COUNT);
-    float playAreaWidth = m_columnCount * brickWidth + (m_columnCount + 1) * m_columnSpacing;
-    float wallWidth     = (m_windowWidth - playAreaWidth) * 0.5f;
+    m_playAreaWidth     = m_columnCount * brickWidth + (m_columnCount + 1) * m_columnSpacing;
+    m_wallWidth         = (m_windowWidth - m_playAreaWidth) * 0.5f;
     float ballRadius    = 0.375f * brickWidth;
     float padOffset     = m_windowHeight - MAX_ROW_SPACING * 2.0f;
 
-    glm::vec2 padDimensions = {playAreaWidth * 0.2f, brickHeight};
+    glm::vec2 padDimensions = {m_playAreaWidth * 0.2f, brickHeight};
 
-    m_basePadSpeed  = PAD_SPEED_FACTOR / playAreaWidth;
-    m_baseBallSpeed = BALL_SPEED_FACTOR / playAreaWidth;
+    m_basePadSpeed  = PAD_SPEED_FACTOR * m_playAreaWidth;
+    m_baseBallSpeed = BALL_SPEED_FACTOR * m_playAreaWidth;
 
     Instance defaultInstance;
     defaultInstance.id           = UINT32_MAX;
@@ -240,23 +247,23 @@ void Level::generateRenderData() {
     m_backup.instances[BACKGROUND_INDEX].textureIndex = Resources::getTextureId(m_backgroundTexturePath);
 
     // Left wall
-    m_backup.instances[LEFT_WALL_INDEX].position     = {wallWidth * 0.5f, m_windowHeight * 0.5f};
+    m_backup.instances[LEFT_WALL_INDEX].position     = {m_wallWidth * 0.5f, m_windowHeight * 0.5f};
     m_backup.instances[LEFT_WALL_INDEX].depth        = GAME_DEPTH;
-    m_backup.instances[LEFT_WALL_INDEX].scale        = {wallWidth, m_windowHeight};
+    m_backup.instances[LEFT_WALL_INDEX].scale        = {m_wallWidth, m_windowHeight};
     m_backup.instances[LEFT_WALL_INDEX].textureIndex = Resources::getTextureId(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
     m_backup.instances[LEFT_WALL_INDEX].uvOffset     = {0.0f, 0.0f};
-    m_backup.instances[LEFT_WALL_INDEX].uvScale      = {wallWidth / static_cast<float>(m_windowWidth), 1.0f};
+    m_backup.instances[LEFT_WALL_INDEX].uvScale      = {m_wallWidth / static_cast<float>(m_windowWidth), 1.0f};
 
     // Right wall
-    m_backup.instances[RIGHT_WALL_INDEX].position     = {static_cast<float>(m_windowWidth) - wallWidth * 0.5f, m_windowHeight * 0.5f};
+    m_backup.instances[RIGHT_WALL_INDEX].position     = {static_cast<float>(m_windowWidth) - m_wallWidth * 0.5f, m_windowHeight * 0.5f};
     m_backup.instances[RIGHT_WALL_INDEX].depth        = GAME_DEPTH;
-    m_backup.instances[RIGHT_WALL_INDEX].scale        = {wallWidth, m_windowHeight};
+    m_backup.instances[RIGHT_WALL_INDEX].scale        = {m_wallWidth, m_windowHeight};
     m_backup.instances[RIGHT_WALL_INDEX].textureIndex = Resources::getTextureId(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
-    m_backup.instances[RIGHT_WALL_INDEX].uvOffset     = {m_windowWidth - wallWidth / static_cast<float>(m_windowWidth), 0.0f};
-    m_backup.instances[RIGHT_WALL_INDEX].uvScale      = {wallWidth / static_cast<float>(m_windowWidth), 1.0f};
+    m_backup.instances[RIGHT_WALL_INDEX].uvOffset     = {m_windowWidth - m_wallWidth / static_cast<float>(m_windowWidth), 0.0f};
+    m_backup.instances[RIGHT_WALL_INDEX].uvScale      = {m_wallWidth / static_cast<float>(m_windowWidth), 1.0f};
 
     // The pad
-    m_padInitialPosition                       = {wallWidth + playAreaWidth * 0.5f, padOffset};
+    m_padInitialPosition                       = {m_wallWidth + m_playAreaWidth * 0.5f, padOffset};
     m_backup.instances[PAD_INDEX].position     = m_padInitialPosition;
     m_backup.instances[PAD_INDEX].depth        = GAME_DEPTH;
     m_backup.instances[PAD_INDEX].scale        = padDimensions;
@@ -275,7 +282,7 @@ void Level::generateRenderData() {
     float    stepY             = m_rowSpacing + brickHeight;
     for (size_t i = 0; i < m_levelLayout.size(); ++i, offsetY += stepY) {
         std::vector<uint32_t>& brickRow = m_levelLayout[i];
-        float                  offsetX  = wallWidth + m_columnSpacing + 0.5f * brickWidth;
+        float                  offsetX  = m_wallWidth + m_columnSpacing + 0.5f * brickWidth;
         float                  stepX    = m_columnSpacing + brickWidth;
         for (size_t j = 0; j < brickRow.size(); ++j, offsetX += stepX) {
             const uint32_t brickMaxHealth                      = m_brickTypes[m_levelLayout[i][j]].hitPoints;

@@ -6,9 +6,9 @@
 #include <chrono>
 
 // In frames per second. Set to 0 for uncapped
-#define TARGET_FRAMERATE 240
+#define TARGET_FRAMERATE 120
 
-#define START_LIFE_COUNT 3
+#define START_LIFE_COUNT 99
 
 #define BEGIN_LEVEL_BEFORE_FADE SECONDS_TO_MICROSECONDS(1)
 #define BEGIN_LEVEL_FADE        SECONDS_TO_MICROSECONDS(2)

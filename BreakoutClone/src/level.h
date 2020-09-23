@@ -31,8 +31,8 @@
 #define UI_LABEL_RATIO    3.0f
 #define UI_NUMBER_RATIO   1.0f
 
-#define PAD_SPEED_FACTOR  0.5f
-#define BALL_SPEED_FACTOR 0.5f
+#define PAD_SPEED_FACTOR  0.00000025f
+#define BALL_SPEED_FACTOR 0.00000025f
 
 #define UI_DEPTH         0.2f
 #define FOREGROUND_DEPTH 0.4f
@@ -83,6 +83,8 @@ class Level {
 
     void setHUDVisibility(const float& alpha);
 
+    const glm::vec2 getStartingBallDirection();
+
     void resetPadAndBall();
     Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight);
     void destroy();
@@ -120,6 +122,9 @@ class Level {
 
     glm::vec2 m_padInitialPosition;
     glm::vec2 m_ballInitialPosition;
+
+    float m_playAreaWidth;
+    float m_wallWidth;
 
     float m_basePadSpeed;
     float m_baseBallSpeed;
