@@ -5,6 +5,7 @@
 #include "renderer.h"
 #include "resources.h"
 #include "sharedStructures.h"
+#include "soundManager.h"
 
 #include "common.h"
 

@@ -290,7 +290,8 @@ const uint32_t Resources::loadTexture(const std::string& pathToTexture, const fl
         activeLevel->updateCommandBuffers();
     }
 
-    return m_textureMap[textureMapId] = m_textureMaxId++;
+    m_textureMap[textureMapId] = m_textures.size() - 1;
+    return m_textures.size() - 1;
 }
 
 const uint32_t Resources::getTextureId(const std::string& texturePath, const float& scale) {
@@ -320,7 +321,6 @@ std::string Resources::m_resourcesPath = "";
 
 std::map<std::string, uint32_t> Resources::m_textureMap;
 std::vector<Image>              Resources::m_textures;
-uint32_t                        Resources::m_textureMaxId = 0;
 
 const VkImage Resources::createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat) {
     VkImageCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};

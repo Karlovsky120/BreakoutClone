@@ -87,7 +87,6 @@ class Resources {
 
     static std::map<std::string, uint32_t> m_textureMap;
     static std::vector<Image>              m_textures;
-    static uint32_t                        m_textureMaxId;
 
     static const VkImage        createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat);
     static const VkImageView    createImageView(const VkImage& image, const VkFormat& format, const VkImageAspectFlags& aspectMask);
