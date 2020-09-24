@@ -4,6 +4,7 @@
 #include "commonExternal.h"
 
 #include <chrono>
+#include <memory>
 
 // In frames per second. Set to 0 for uncapped
 #define TARGET_FRAMERATE 120
@@ -14,6 +15,8 @@
 #define BEGIN_LEVEL_FADE        SECONDS_TO_MICROSECONDS(2)
 #define LOSE_GAME_FADE          SECONDS_TO_MICROSECONDS(3)
 #define LEVEL_WIN_FADE          SECONDS_TO_MICROSECONDS(3)
+
+class SoundManager;
 
 enum class GameState { BEGIN_LEVEL, BALL_ATTACHED, PLAYING, LOSE_LIFE, LOSE_GAME, RESTART_SCREEN, WIN_LEVEL, WIN_GAME };
 
@@ -27,6 +30,8 @@ class Breakout {
     ~Breakout();
 
   private:
+    std::unique_ptr<SoundManager> m_soundManager;
+
     uint32_t m_targetFrameTime = TARGET_FRAMERATE == 0 ? 0 : 1'000'000 / TARGET_FRAMERATE;
     uint32_t m_timeCounter     = 0;
     uint32_t m_frameCount      = 0;

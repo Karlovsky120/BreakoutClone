@@ -1,9 +1,8 @@
 #include "SoundManager.h"
 
 #include <filesystem>
-#include <fstream>
 
-void SoundManager::init() { Mix_OpenAudio(44100, AUDIO_S32, 2, 1024); }
+SoundManager::SoundManager() { Mix_OpenAudio(44100, AUDIO_S32, 2, 1024); }
 
 void SoundManager::playSound(const std::string& soundId) {
     auto soundCacheMapEntry = m_sounds.find(soundId);
@@ -14,7 +13,7 @@ void SoundManager::playSound(const std::string& soundId) {
     }
 }
 
-void SoundManager::deinit() {
+SoundManager::~SoundManager() {
     for (auto& entry : m_sounds) {
         Mix_FreeChunk(entry.second);
     }
@@ -23,13 +22,9 @@ void SoundManager::deinit() {
 }
 
 Mix_Chunk* SoundManager::loadSound(const std::string& soundId) {
-    std::filesystem::path fullPath = std::filesystem::current_path();
-    fullPath += "\\resources\\sounds\\";
-    fullPath += soundId;
+    std::string path = std::filesystem::current_path().string();
+    path += SOUND_FOLDER + soundId;
 
-    m_sounds[soundId] = Mix_LoadWAV(fullPath.string().c_str());
-
+    m_sounds[soundId] = Mix_LoadWAV(path.c_str());
     return m_sounds[soundId];
 }
-
-std::map<std::string, Mix_Chunk*> SoundManager::m_sounds;

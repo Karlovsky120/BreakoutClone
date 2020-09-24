@@ -23,7 +23,7 @@ Level* Breakout::m_currentLevel;
 
 Breakout::Breakout() {
     Renderer::initRenderer();
-    SoundManager::init();
+    m_soundManager = std::make_unique<SoundManager>();
     loadLevelData();
 }
 
@@ -33,7 +33,7 @@ Breakout::~Breakout() {
     }
 
     Resources::cleanup();
-    SoundManager::deinit();
+    m_soundManager.reset();
     Renderer::getInstance()->destroy();
 }
 
@@ -266,11 +266,11 @@ void Breakout::gameLoop() {
 
             switch (collisionData.type) {
             case CollisionType::WALL: {
-                SoundManager::playSound(SOUND_WALL);
+                m_soundManager->playSound(SOUND_WALL);
                 break;
             }
             case CollisionType::PAD: {
-                SoundManager::playSound(SOUND_PAD);
+                m_soundManager->playSound(SOUND_PAD);
                 break;
             }
             case CollisionType::BRICK: {
@@ -278,9 +278,9 @@ void Breakout::gameLoop() {
                 const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
                 std::string      soundId;
                 if (brick.health == 0) {
-                    SoundManager::playSound(brickType.breakSoundPath);
+                    m_soundManager->playSound(brickType.breakSoundPath);
                 } else {
-                    SoundManager::playSound(brickType.hitSoundPath);
+                    m_soundManager->playSound(brickType.hitSoundPath);
                 }
                 break;
             }
