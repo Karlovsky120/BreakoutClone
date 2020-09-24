@@ -1,5 +1,4 @@
 #pragma once
-#include "resources.h"
 #include "swapchain.h"
 
 #include "common.h"
@@ -23,29 +22,69 @@
 
 #define STAGING_BUFFER_SIZE (1 << 25) // 32MB
 
+class TextureManager;
+
+struct Buffer {
+    VkBuffer       buffer;
+    VkDeviceMemory memory;
+
+    Buffer(const VkDevice& device, const VkBuffer& buffer, const VkDeviceMemory& memory) : buffer(buffer), memory(memory), device(device) {}
+    ~Buffer() {
+        vkDestroyBuffer(device, buffer, nullptr);
+        vkFreeMemory(device, memory, nullptr);
+    }
+
+    Buffer(const Buffer&) = delete;
+    Buffer& operator=(const Buffer&) = delete;
+
+  private:
+    VkDevice device;
+};
+
+struct Image {
+    VkImage        image;
+    VkDeviceMemory memory;
+    VkImageView    view;
+    VkExtent2D     size;
+
+    Image(const VkDevice& device, const VkImage& image, const VkDeviceMemory& memory, const VkImageView& view, const VkExtent2D& size)
+        : device(device), image(image), memory(memory), view(view), size(size) {}
+    ~Image() {
+        vkDestroyImageView(device, view, nullptr);
+        vkDestroyImage(device, image, nullptr);
+        vkFreeMemory(device, memory, nullptr);
+    }
+
+    Image(const Image&) = delete;
+    Image& operator=(const Image&) = delete;
+
+  private:
+    VkDevice device;
+};
+
 class Renderer {
   public:
-    static Renderer* getInstance();
+    Renderer();
+    ~Renderer();
 
-    static void initRenderer();
+    void showWindow();
+    void waitIdle() const;
+    void setWindowTitle(const char* title);
+    void acquireImage();
+    void renderAndPresentImage();
+    void recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
+    void updateTextureArray(const std::vector<std::unique_ptr<Image>>& textures);
 
-    static const VkDevice&                         getDevice();
-    static const VkPhysicalDeviceProperties&       getDeviceProperties();
-    static const VkPhysicalDeviceMemoryProperties& getMemoryProperties();
-    static const VkCommandPool&                    getTransferCommandPool();
-    static const Buffer&                           getStagingBuffer();
-    static const VkQueue&                          getQueue();
+    const Buffer* const getUniformBuffer() const;
 
-    static void setWindowTitle(const char* title);
-    static void showWindow();
-    void        acquireImage();
-    void        renderAndPresentImage();
-
-    static void recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const uint32_t& instanceCount);
-    static void updateTextureArray();
-    static void nameObject(void* handle, const VkObjectType& type, const char* name);
-
-    void destroy();
+    std::unique_ptr<Image>  createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat,
+                                        const VkImageAspectFlags& aspectMask, const char* name);
+    std::unique_ptr<Buffer> createBuffer(const VkDeviceSize& bufferSize, const VkBufferUsageFlags& bufferUsageFlags,
+                                         const VkMemoryPropertyFlags& memoryPropertyFlags, const char* name);
+    void                    uploadToDeviceLocalImage(const void* data, const uint32_t& imageSize, const Image& deviceImage, const VkImageLayout& initialLayout,
+                                                     const VkImageLayout& finalLayout);
+    void                    uploadToHostVisibleBuffer(const void* data, const uint32_t& bufferSize, const VkDeviceMemory& memory);
+    void                    uploadToDeviceLocalBuffer(const void* data, const uint32_t& bufferSize, const VkBuffer& deviceBuffer);
 
     Renderer(Renderer const&) = delete;
     void operator=(Renderer const&) = delete;
@@ -73,11 +112,11 @@ class Renderer {
     VkDebugUtilsMessengerEXT m_debugUtilsMessenger = VK_NULL_HANDLE;
 #endif
 
-    Buffer                     m_vertexBuffer;
-    Buffer                     m_indexBuffer;
-    Buffer                     m_stagingBuffer;
-    Buffer                     m_uniformBuffer;
-    Image                      m_depthImage;
+    std::unique_ptr<Buffer>    m_vertexBuffer;
+    std::unique_ptr<Buffer>    m_indexBuffer;
+    std::unique_ptr<Buffer>    m_stagingBuffer;
+    std::unique_ptr<Buffer>    m_uniformBuffer;
+    std::unique_ptr<Image>     m_depthImage;
     std::unique_ptr<Swapchain> m_swapchain;
 
     VkExtent2D                       m_surfaceExtent                  = {};
@@ -102,42 +141,52 @@ class Renderer {
 
     VkPipelineStageFlags m_renderSubmitWaitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
-    void init();
+    TextureManager* m_textureManager;
+
     void initSDL();
+
 #ifdef VALIDATION_ENABLED
     void setupDebugUtils();
 #endif
+
     void createInstance();
     void pickPhysicalDevice();
     void createDevice();
     void createRenderPass();
     void createFramebuffers();
+    void createSampler();
     void createDescriptorLayout();
     void createPipelineCache();
     void createPipelineLayout();
-    void createGraphicsPipeline();
+    void createPipeline();
     void createDescriptorPool();
     void allocateDescriptorSet();
-    void createUniformBuffer();
-    void writeDescriptorSet();
-    void createRenderCommandPools();
     void allocateRenderCommandBuffers();
     void createSyncObjects();
     void setupRenderLoop();
-    void createVertexAndIndexBuffers();
-    void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& instanceBuffer, const uint32_t& instanceCount) const;
+    void writeDescriptorSet();
     void resetRenderCommandBuffers();
+    void recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuffer& instanceBuffer, const uint32_t& instanceCount) const;
 
+    const VkCommandPool  createCommandPool();
     const uint32_t       getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const;
     const VkShaderModule loadShader(const char* pathToSource) const;
-    const VkCommandPool  createCommandPool();
+
+#ifdef VALIDATION_ENABLED
+    void nameObject(void* handle, const VkObjectType& type, const char* name);
+#endif
+
+    const VkImage              createVkImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat);
+    const VkImageView          createImageView(const VkImage& image, const VkFormat& format, const VkImageAspectFlags& aspectMask);
+    const VkImageMemoryBarrier createImageMemoryBarrier(const VkImage& image, const VkImageLayout& oldLayout, const VkImageLayout& newLayout);
+    const VkBuffer             createVkBuffer(const VkDeviceSize& bufferSize, const VkBufferUsageFlags& bufferUsageFlags);
+    const uint32_t             findMemoryType(const uint32_t& memoryTypeBits, const VkMemoryPropertyFlags& memoryPropertyFlags);
+    const VkDeviceMemory       allocateVulkanObjectMemory(const VkMemoryRequirements& memoryRequirements, const VkMemoryPropertyFlags& memoryPropertyFlags);
+
+    void createVertexAndIndexBuffers();
 
 #ifdef VALIDATION_ENABLED
     static VkBool32 VKAPI_CALL debugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
                                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* /*pUserData*/);
 #endif
-
-    Renderer();
-
-    static Renderer* m_renderer;
 };

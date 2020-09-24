@@ -4,8 +4,6 @@
 
 #include "SDL_mixer.h"
 
-#include <string>
-
 #define SOUND_FOLDER "\\resources\\sounds\\"
 
 #define SOUND_PAD  "pad.wav"

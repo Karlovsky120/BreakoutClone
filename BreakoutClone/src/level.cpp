@@ -1,22 +1,24 @@
 #include "level.h"
 
 #include "renderer.h"
-#include "resources.h"
+#include "textureManager.h"
 
 // This generally silences all warnings in the external file, but it doesn't work for warning bellow.
 #pragma warning(push, 0)
 #pragma warning(disable : 6011)  // Dereferencing NULL pointer *.
 #pragma warning(disable : 6319)  // Use of the comma-operator in a tested expression causes the left argument to be ignored when it has no side-effects.
-#pragma warning(disable : 26495) // Variable * is uninitialized.Always initialize a member variable.
-#pragma warning(disable : 28182) // Dereferencing NULL pointer '*' contains the same NULL value as '*'.
 #pragma warning(disable : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value.
+#pragma warning(disable : 26495) // Variable * is uninitialized.Always initialize a member variable.
+#pragma warning(disable : 26819) // Dereferencing NULL pointer.'*' contains the same NULL value as '*' did.
+#pragma warning(disable : 28182) // Dereferencing NULL pointer '*' contains the same NULL value as '*'.
 
 #include "tinyxml2.cpp"
 #include "tinyxml2.h"
 
-#pragma warning(enable : 26451)
 #pragma warning(enable : 28182)
+#pragma warning(enable : 26819)
 #pragma warning(enable : 26495)
+#pragma warning(enable : 26451)
 #pragma warning(enable : 6319)
 #pragma warning(enable : 6011)
 #pragma warning(pop)
@@ -24,97 +26,84 @@
 #include "common.h"
 
 #include <algorithm>
-#include <filesystem>
 #include <sstream>
-#include <string>
+
+Level::Level(const char* levelPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight, Renderer* const renderer,
+             TextureManager* const textureManager)
+    : m_levelIndex(levelIndex), m_windowWidth(windowWidth), m_windowHeight(windowHeight), m_renderer(renderer), m_textureManager(textureManager) {
+
+    parseXml(levelPath);
+    generateRenderData();
+}
+
+Level::~Level() { m_renderer->waitIdle(); }
 
 void Level::load(const uint32_t& lifeCount, const uint32_t& score, const uint32_t& levelIndex) {
     m_inUse = m_backup;
 
-    Resources::uploadToHostVisibleBuffer(m_inUse.instances.data(), m_instanceDataBufferSize, m_instanceBuffer.memory);
-    Renderer::updateTextureArray();
-    Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_inUse.instances.size()));
+    m_renderer->uploadToHostVisibleBuffer(m_inUse.instances.data(), m_instanceDataBufferSize, m_instanceBuffer->memory);
+    m_renderer->updateTextureArray(m_textureManager->getTextureArray());
+    m_renderer->recordRenderCommandBuffers(m_instanceBuffer->buffer, static_cast<uint32_t>(m_inUse.instances.size()));
     m_inUse.commandBufferRecorded = true;
 
     setNumber(m_levelCountStartIndex, LEVEL_COUNT_DIGITS, levelIndex);
-
     setLifeCount(lifeCount);
     setScore(score);
 }
 
-void Level::updateGPUData() const { Resources::uploadToHostVisibleBuffer(m_inUse.instances.data(), m_instanceDataBufferSize, m_instanceBuffer.memory); }
-
-std::vector<Instance>& Level::getInstances() { return m_inUse.instances; }
-const glm::vec2        Level::getWindowDimensions() const { return {m_windowWidth, m_windowHeight}; }
-const float&           Level::getBasePadSpeed() const { return m_basePadSpeed; }
-const float&           Level::getBaseBallSpeed() const { return m_baseBallSpeed; }
-const uint32_t&        Level::getTotalBrickCount() const { return m_totalBrickCount; }
-const uint32_t&        Level::getRemainingBrickCount() const { return m_inUse.remainingBrickCount; }
-// glm::vec2&             Level::getBallDirection() { return m_ballDirection; }
-Instance& Level::getForeground() { return m_inUse.instances[m_foregroundIndex]; }
-
-const bool& Level::isCommandBufferRecorded() const { return m_inUse.commandBufferRecorded; }
-
-void Level::updateCommandBuffers() const { Renderer::recordRenderCommandBuffers(m_instanceBuffer.buffer, static_cast<uint32_t>(m_inUse.instances.size())); }
+void Level::updateGPUData() const { m_renderer->uploadToHostVisibleBuffer(m_inUse.instances.data(), m_instanceDataBufferSize, m_instanceBuffer->memory); }
 
 void Level::setForegroundVisibility(const float& alpha) { m_inUse.instances[m_foregroundIndex].textureAlpha = alpha; }
-void Level::setTitleVisibility(const float& alpha) { m_inUse.instances[m_titleIndex].textureAlpha = alpha; }
-void Level::setTitle(const std::string& texturePath) { m_inUse.instances[m_titleIndex].textureIndex = Resources::getTextureId(texturePath); }
-void Level::setSubtitleVisibility(const float& alpha) { m_inUse.instances[m_subtitleIndex].textureAlpha = alpha; }
-void Level::setSubtitle(const std::string& texturePath) { m_inUse.instances[m_subtitleIndex].textureIndex = Resources::getTextureId(texturePath); }
 
-void Level::setNumber(const uint32_t& instanceIndex, const uint32_t& digitCount, uint32_t number) {
-    for (size_t i = 0; i < digitCount; ++i) {
-        m_inUse.instances[instanceIndex + digitCount - i - 1].textureIndex = Resources::getTextureId(FOLDER_UI_NUMBER(number % 10));
-        number /= 10;
-    }
-}
+void Level::setTitleVisibility(const float& alpha) { m_inUse.instances[m_titleIndex].textureAlpha = alpha; }
+
+void Level::setTitle(const std::string& texturePath) { m_inUse.instances[m_titleIndex].textureIndex = m_textureManager->getTextureId(texturePath); }
+
+void Level::setSubtitleVisibility(const float& alpha) { m_inUse.instances[m_subtitleIndex].textureAlpha = alpha; }
+
+void Level::setSubtitle(const std::string& texturePath) { m_inUse.instances[m_subtitleIndex].textureIndex = m_textureManager->getTextureId(texturePath); }
 
 void Level::setScore(const uint32_t& score) { setNumber(m_scoreCountStartIndex, SCORE_COUNT_DIGITS, score); }
 
-void Level::setHUDVisibility(const float& alpha) {
-    m_inUse.instances[m_scoreLabelIndex].textureAlpha = alpha;
-    for (size_t i = 0; i < SCORE_COUNT_DIGITS; ++i) {
-        m_inUse.instances[m_scoreCountStartIndex + i].textureAlpha = alpha;
-    }
-
-    m_inUse.instances[m_levelLabelIndex].textureAlpha = alpha;
-    for (size_t i = 0; i < LEVEL_COUNT_DIGITS; ++i) {
-        m_inUse.instances[m_levelCountStartIndex + i].textureAlpha = alpha;
-    }
-
-    m_inUse.instances[m_livesLabelIndex].textureAlpha = alpha;
-    for (size_t i = 0; i < LIFE_COUNT_DIGITS; ++i) {
-        m_inUse.instances[m_livesCountStartIndex + i].textureAlpha = alpha;
-    }
-}
-
-const glm::vec2 Level::getStartingBallDirection() {
-    float padXOffset = m_inUse.instances[PAD_INDEX].position.x - m_wallWidth - m_playAreaWidth * 0.5f;
-    return glm::normalize(glm::vec2(padXOffset * 1.2f, -m_playAreaWidth));
-}
-
 void Level::setLifeCount(const uint32_t& lifeCount) { setNumber(m_livesCountStartIndex, LIFE_COUNT_DIGITS, lifeCount); }
 
-void Level::resetPadAndBall() {
-    m_inUse.instances[PAD_INDEX].position  = m_padInitialPosition;
-    m_inUse.instances[BALL_INDEX].position = m_ballInitialPosition;
-}
+std::vector<Instance>& Level::getInstances() { return m_inUse.instances; };
+
+const BrickType& Level::getBrickData(const uint32_t& id) const { return m_brickTypes.find(id)->second; }
+
+const uint32_t& Level::getRemainingBrickCount() const { return m_inUse.remainingBrickCount; }
+
+const uint32_t& Level::getTotalBrickCount() const { return m_totalBrickCount; }
+
+Instance* const Level::getBricksPtr() { return &m_inUse.instances[BRICK_START_INDEX]; }
 
 const uint32_t& Level::destroyBrick() {
     --m_inUse.remainingBrickCount;
     return m_inUse.remainingBrickCount;
 }
 
-const BrickType& Level::getBrickData(const uint32_t& id) const { return m_brickTypes.find(id)->second; }
+const glm::vec2 Level::getWindowDimensions() const { return {m_windowWidth, m_windowHeight}; }
 
-Level::Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight)
-    : m_levelIndex(levelIndex), m_windowWidth(windowWidth), m_windowHeight(windowHeight) {
-    parseXml(fullPath);
-    generateRenderData();
+const glm::vec2 Level::getStartingBallDirection() const {
+    float padXOffset = m_inUse.instances[PAD_INDEX].position.x - m_wallWidth - m_playAreaWidth * 0.5f;
+    return glm::normalize(glm::vec2(padXOffset * 1.2f, -m_playAreaWidth));
 }
 
-void Level::destroy() { m_instanceBuffer.destroy(); }
+const float& Level::getBasePadSpeed() const { return m_basePadSpeed; }
+
+const float& Level::getBaseBallSpeed() const { return m_baseBallSpeed; }
+
+void Level::resetPadAndBall() {
+    m_inUse.instances[PAD_INDEX].position  = m_padInitialPosition;
+    m_inUse.instances[BALL_INDEX].position = m_ballInitialPosition;
+}
+
+void Level::setNumber(const uint32_t& instanceIndex, const uint32_t& digitCount, uint32_t number) {
+    for (size_t i = 0; i < digitCount; ++i) {
+        m_inUse.instances[instanceIndex - i - 1 + digitCount].textureIndex = m_textureManager->getTextureId(TEXTURE_UI_NUMBER(number % 10));
+        number /= 10;
+    }
+}
 
 void Level::parseXml(const char* fullPath) {
     tinyxml2::XMLDocument levelXml;
@@ -227,7 +216,7 @@ void Level::generateRenderData() {
     Instance defaultInstance;
     defaultInstance.id           = UINT32_MAX;
     defaultInstance.position     = {0.0f, 0.0f};
-    defaultInstance.depth        = GAME_DEPTH;
+    defaultInstance.depth        = DEPTH_GAME;
     defaultInstance.scale        = {1.0f, 1.0f};
     defaultInstance.textureIndex = 0;
     defaultInstance.textureAlpha = 1.0f;
@@ -242,39 +231,39 @@ void Level::generateRenderData() {
 
     // Background
     m_backup.instances[BACKGROUND_INDEX].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f};
-    m_backup.instances[BACKGROUND_INDEX].depth        = BACKGROUND_DEPTH;
+    m_backup.instances[BACKGROUND_INDEX].depth        = DEPTH_BACKGROUND;
     m_backup.instances[BACKGROUND_INDEX].scale        = {m_windowWidth, m_windowHeight};
-    m_backup.instances[BACKGROUND_INDEX].textureIndex = Resources::getTextureId(m_backgroundTexturePath);
+    m_backup.instances[BACKGROUND_INDEX].textureIndex = m_textureManager->getTextureId(m_backgroundTexturePath);
 
     // Left wall
     m_backup.instances[LEFT_WALL_INDEX].position     = {m_wallWidth * 0.5f, m_windowHeight * 0.5f};
-    m_backup.instances[LEFT_WALL_INDEX].depth        = GAME_DEPTH;
+    m_backup.instances[LEFT_WALL_INDEX].depth        = DEPTH_GAME;
     m_backup.instances[LEFT_WALL_INDEX].scale        = {m_wallWidth, m_windowHeight};
-    m_backup.instances[LEFT_WALL_INDEX].textureIndex = Resources::getTextureId(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
+    m_backup.instances[LEFT_WALL_INDEX].textureIndex = m_textureManager->getTextureId(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
     m_backup.instances[LEFT_WALL_INDEX].uvOffset     = {0.0f, 0.0f};
     m_backup.instances[LEFT_WALL_INDEX].uvScale      = {m_wallWidth / static_cast<float>(m_windowWidth), 1.0f};
 
     // Right wall
     m_backup.instances[RIGHT_WALL_INDEX].position     = {static_cast<float>(m_windowWidth) - m_wallWidth * 0.5f, m_windowHeight * 0.5f};
-    m_backup.instances[RIGHT_WALL_INDEX].depth        = GAME_DEPTH;
+    m_backup.instances[RIGHT_WALL_INDEX].depth        = DEPTH_GAME;
     m_backup.instances[RIGHT_WALL_INDEX].scale        = {m_wallWidth, m_windowHeight};
-    m_backup.instances[RIGHT_WALL_INDEX].textureIndex = Resources::getTextureId(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
+    m_backup.instances[RIGHT_WALL_INDEX].textureIndex = m_textureManager->getTextureId(m_backgroundTexturePath, SIDE_BLUR_STRENGTH);
     m_backup.instances[RIGHT_WALL_INDEX].uvOffset     = {m_windowWidth - m_wallWidth / static_cast<float>(m_windowWidth), 0.0f};
     m_backup.instances[RIGHT_WALL_INDEX].uvScale      = {m_wallWidth / static_cast<float>(m_windowWidth), 1.0f};
 
     // The pad
     m_padInitialPosition                       = {m_wallWidth + m_playAreaWidth * 0.5f, padOffset};
     m_backup.instances[PAD_INDEX].position     = m_padInitialPosition;
-    m_backup.instances[PAD_INDEX].depth        = GAME_DEPTH;
+    m_backup.instances[PAD_INDEX].depth        = DEPTH_GAME;
     m_backup.instances[PAD_INDEX].scale        = padDimensions;
-    m_backup.instances[PAD_INDEX].textureIndex = Resources::getTextureId(PAD_TEXTURE_PATH);
+    m_backup.instances[PAD_INDEX].textureIndex = m_textureManager->getTextureId(TEXTURE_PAD);
 
     // The ball
     m_ballInitialPosition                       = {m_windowWidth * 0.5f, padOffset - (0.5f * padDimensions.y + ballRadius + 1.0f)};
     m_backup.instances[BALL_INDEX].position     = m_ballInitialPosition;
-    m_backup.instances[BALL_INDEX].depth        = GAME_DEPTH;
+    m_backup.instances[BALL_INDEX].depth        = DEPTH_GAME;
     m_backup.instances[BALL_INDEX].scale        = {2.0f * ballRadius, 2.0f * ballRadius};
-    m_backup.instances[BALL_INDEX].textureIndex = Resources::getTextureId(BALL_TEXTURE_PATH);
+    m_backup.instances[BALL_INDEX].textureIndex = m_textureManager->getTextureId(TEXTURE_BALL);
 
     // Bricks
     uint32_t instanceDataIndex = BRICK_START_INDEX;
@@ -288,9 +277,9 @@ void Level::generateRenderData() {
             const uint32_t brickMaxHealth                      = m_brickTypes[m_levelLayout[i][j]].hitPoints;
             m_backup.instances[instanceDataIndex].id           = m_brickTypes[m_levelLayout[i][j]].id;
             m_backup.instances[instanceDataIndex].position     = {offsetX, offsetY};
-            m_backup.instances[instanceDataIndex].depth        = GAME_DEPTH;
+            m_backup.instances[instanceDataIndex].depth        = DEPTH_GAME;
             m_backup.instances[instanceDataIndex].scale        = {brickWidth, brickHeight};
-            m_backup.instances[instanceDataIndex].textureIndex = Resources::getTextureId(m_brickTypes[m_levelLayout[i][j]].texturePath);
+            m_backup.instances[instanceDataIndex].textureIndex = m_textureManager->getTextureId(m_brickTypes[m_levelLayout[i][j]].texturePath);
             m_backup.instances[instanceDataIndex].health       = brickMaxHealth;
             m_backup.instances[instanceDataIndex].maxHealth    = brickMaxHealth;
 
@@ -305,9 +294,9 @@ void Level::generateRenderData() {
     // Foreground
     m_foregroundIndex                                  = instanceDataIndex;
     m_backup.instances[m_foregroundIndex].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f};
-    m_backup.instances[m_foregroundIndex].depth        = FOREGROUND_DEPTH;
+    m_backup.instances[m_foregroundIndex].depth        = DEPTH_FOREGROUND;
     m_backup.instances[m_foregroundIndex].scale        = {m_windowWidth, m_windowHeight};
-    m_backup.instances[m_foregroundIndex].textureIndex = Resources::getTextureId(FOREGROUND_TEXTURE_PATH);
+    m_backup.instances[m_foregroundIndex].textureIndex = m_textureManager->getTextureId(TEXTURE_FOREGROUND);
     m_backup.instances[m_foregroundIndex].textureAlpha = 1.0f;
     ++instanceDataIndex;
 
@@ -315,7 +304,7 @@ void Level::generateRenderData() {
     float uiTitleHeight                           = m_windowHeight * 0.2f;
     m_titleIndex                                  = instanceDataIndex;
     m_backup.instances[m_titleIndex].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.25f};
-    m_backup.instances[m_titleIndex].depth        = UI_DEPTH;
+    m_backup.instances[m_titleIndex].depth        = DEPTH_UI;
     m_backup.instances[m_titleIndex].scale        = {uiTitleHeight * UI_TITLE_RATIO, uiTitleHeight};
     m_backup.instances[m_titleIndex].textureAlpha = 0.0f;
     ++instanceDataIndex;
@@ -324,7 +313,7 @@ void Level::generateRenderData() {
     float uiSubtitleHeight                           = uiTitleHeight * 0.25f;
     m_subtitleIndex                                  = instanceDataIndex;
     m_backup.instances[m_subtitleIndex].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.75f};
-    m_backup.instances[m_subtitleIndex].depth        = UI_DEPTH;
+    m_backup.instances[m_subtitleIndex].depth        = DEPTH_UI;
     m_backup.instances[m_subtitleIndex].scale        = {uiSubtitleHeight * UI_SUBTITLE_RATIO, uiSubtitleHeight};
     m_backup.instances[m_subtitleIndex].textureAlpha = 0.0f;
     ++instanceDataIndex;
@@ -337,19 +326,17 @@ void Level::generateRenderData() {
     float currentLabelHeight                           = m_windowHeight - uiLabelHeight * 0.5f;
     m_scoreLabelIndex                                  = instanceDataIndex;
     m_backup.instances[m_scoreLabelIndex].position     = {0.5f * uiLabelWidth, currentLabelHeight};
-    m_backup.instances[m_scoreLabelIndex].depth        = UI_DEPTH;
+    m_backup.instances[m_scoreLabelIndex].depth        = DEPTH_UI;
     m_backup.instances[m_scoreLabelIndex].scale        = {uiLabelWidth, uiLabelHeight};
-    m_backup.instances[m_scoreLabelIndex].textureAlpha = 0.0f;
-    m_backup.instances[m_scoreLabelIndex].textureIndex = Resources::getTextureId(FOLDER_UI_SCORE);
+    m_backup.instances[m_scoreLabelIndex].textureIndex = m_textureManager->getTextureId(TEXTURE_UI_SCORE);
     ++instanceDataIndex;
 
     float scoreDigitPositionX = uiLabelWidth + digitWidth * 0.5f;
     m_scoreCountStartIndex    = instanceDataIndex;
     for (size_t i = 0; i < SCORE_COUNT_DIGITS; ++i) {
-        m_backup.instances[instanceDataIndex].position     = {scoreDigitPositionX, currentLabelHeight};
-        m_backup.instances[instanceDataIndex].depth        = UI_DEPTH;
-        m_backup.instances[instanceDataIndex].scale        = {digitWidth, digitWidth};
-        m_backup.instances[instanceDataIndex].textureAlpha = 0.0f;
+        m_backup.instances[instanceDataIndex].position = {scoreDigitPositionX, currentLabelHeight};
+        m_backup.instances[instanceDataIndex].depth    = DEPTH_UI;
+        m_backup.instances[instanceDataIndex].scale    = {digitWidth, digitWidth};
         scoreDigitPositionX += digitWidth;
         ++instanceDataIndex;
     }
@@ -357,19 +344,17 @@ void Level::generateRenderData() {
     currentLabelHeight -= uiLabelHeight;
     m_levelLabelIndex                                  = instanceDataIndex;
     m_backup.instances[m_levelLabelIndex].position     = {0.5f * uiLabelWidth, currentLabelHeight};
-    m_backup.instances[m_levelLabelIndex].depth        = UI_DEPTH;
+    m_backup.instances[m_levelLabelIndex].depth        = DEPTH_UI;
     m_backup.instances[m_levelLabelIndex].scale        = {uiLabelWidth, uiLabelHeight};
-    m_backup.instances[m_levelLabelIndex].textureAlpha = 0.0f;
-    m_backup.instances[m_levelLabelIndex].textureIndex = Resources::getTextureId(FOLDER_UI_LEVEL);
+    m_backup.instances[m_levelLabelIndex].textureIndex = m_textureManager->getTextureId(TEXTURE_UI_LEVEL);
     ++instanceDataIndex;
 
     float levelDigitPositionX = uiLabelWidth + digitWidth * 0.5f;
     m_levelCountStartIndex    = instanceDataIndex;
     for (size_t i = 0; i < LEVEL_COUNT_DIGITS; ++i) {
-        m_backup.instances[instanceDataIndex].position     = {levelDigitPositionX, currentLabelHeight};
-        m_backup.instances[instanceDataIndex].depth        = UI_DEPTH;
-        m_backup.instances[instanceDataIndex].scale        = {digitWidth, digitWidth};
-        m_backup.instances[instanceDataIndex].textureAlpha = 0.0f;
+        m_backup.instances[instanceDataIndex].position = {levelDigitPositionX, currentLabelHeight};
+        m_backup.instances[instanceDataIndex].depth    = DEPTH_UI;
+        m_backup.instances[instanceDataIndex].scale    = {digitWidth, digitWidth};
         levelDigitPositionX += digitWidth;
         ++instanceDataIndex;
     }
@@ -377,25 +362,22 @@ void Level::generateRenderData() {
     currentLabelHeight -= uiLabelHeight;
     m_livesLabelIndex                                  = instanceDataIndex;
     m_backup.instances[m_livesLabelIndex].position     = {0.5f * uiLabelWidth, currentLabelHeight};
-    m_backup.instances[m_livesLabelIndex].depth        = UI_DEPTH;
+    m_backup.instances[m_livesLabelIndex].depth        = DEPTH_UI;
     m_backup.instances[m_livesLabelIndex].scale        = {uiLabelWidth, uiLabelHeight};
-    m_backup.instances[m_livesLabelIndex].textureAlpha = 0.0f;
-    m_backup.instances[m_livesLabelIndex].textureIndex = Resources::getTextureId(FOLDER_UI_LIVES);
+    m_backup.instances[m_livesLabelIndex].textureIndex = m_textureManager->getTextureId(TEXTURE_UI_LIVES);
     ++instanceDataIndex;
 
     float lifeDigitPositionX = uiLabelWidth + digitWidth * 0.5f;
     m_livesCountStartIndex   = instanceDataIndex;
     for (size_t i = 0; i < LIFE_COUNT_DIGITS; ++i) {
-        m_backup.instances[instanceDataIndex].position     = {lifeDigitPositionX, currentLabelHeight};
-        m_backup.instances[instanceDataIndex].depth        = UI_DEPTH;
-        m_backup.instances[instanceDataIndex].scale        = {digitWidth, digitWidth};
-        m_backup.instances[instanceDataIndex].textureAlpha = 0.0f;
+        m_backup.instances[instanceDataIndex].position = {lifeDigitPositionX, currentLabelHeight};
+        m_backup.instances[instanceDataIndex].depth    = DEPTH_UI;
+        m_backup.instances[instanceDataIndex].scale    = {digitWidth, digitWidth};
         lifeDigitPositionX += digitWidth;
         ++instanceDataIndex;
     }
 
     m_instanceDataBufferSize = VECTOR_SIZE_IN_BYTES(m_backup.instances);
-    m_instanceBuffer         = Resources::createBuffer(m_instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    Renderer::nameObject(&m_instanceBuffer.buffer, VK_OBJECT_TYPE_BUFFER, "Instance buffer");
+    m_instanceBuffer         = m_renderer->createBuffer(m_instanceDataBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, "Instance buffer");
 }

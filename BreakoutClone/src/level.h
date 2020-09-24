@@ -1,13 +1,14 @@
 #pragma once
-#include "physics.h"
-#include "resources.h"
-#include "sharedStructures.h"
 
 #include "common.h"
+#include "sharedStructures.h"
+
 #include "commonExternal.h"
 
 // Smaller the number, stronger the blur
 #define SIDE_BLUR_STRENGTH (1.0f / 16.0f)
+
+#define LEVEL_FOLDER "//resources//levels//"
 
 #define MAX_COLUMN_COUNT 35
 #define MAX_ROW_COUNT    30
@@ -34,10 +35,10 @@
 #define PAD_SPEED_FACTOR  0.00000025f
 #define BALL_SPEED_FACTOR 0.00000025f
 
-#define UI_DEPTH         0.2f
-#define FOREGROUND_DEPTH 0.4f
-#define GAME_DEPTH       0.6f
-#define BACKGROUND_DEPTH 0.8f
+#define DEPTH_UI         0.2f
+#define DEPTH_FOREGROUND 0.4f
+#define DEPTH_GAME       0.6f
+#define DEPTH_BACKGROUND 0.8f
 
 struct BrickType {
     uint32_t    id             = 0;
@@ -48,29 +49,26 @@ struct BrickType {
     std::string breakSoundPath = "";
 };
 
-struct DynamicData {
+struct DynamicLevelData {
     uint32_t              remainingBrickCount = 0;
     glm::vec2             ballDirection       = {0.0f, 0.0f};
     std::vector<Instance> instances;
     bool                  commandBufferRecorded = false;
 };
 
+struct Buffer;
+class Renderer;
+class TextureManager;
+
 class Level {
   public:
-    void                   load(const uint32_t& lifeCount, const uint32_t& score, const uint32_t& levelIndex);
-    void                   updateGPUData() const;
-    std::vector<Instance>& getInstances();
-    const glm::vec2        getWindowDimensions() const;
-    const uint32_t&        getTotalBrickCount() const;
-    const uint32_t&        getRemainingBrickCount() const;
-    const float&           getBasePadSpeed() const;
-    const float&           getBaseBallSpeed() const;
-    const uint32_t&        destroyBrick();
-    const BrickType&       getBrickData(const uint32_t& id) const;
-    Instance&              getForeground();
+    Level(const char* levelPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight, Renderer* const renderer,
+          TextureManager* const textureManager);
+    ~Level();
 
-    const bool& isCommandBufferRecorded() const;
-    void        updateCommandBuffers() const;
+    void load(const uint32_t& lifeCount, const uint32_t& score, const uint32_t& levelIndex);
+
+    void updateGPUData() const;
 
     void setForegroundVisibility(const float& alpha);
     void setTitleVisibility(const float& alpha);
@@ -81,24 +79,30 @@ class Level {
     void setScore(const uint32_t& score);
     void setLifeCount(const uint32_t& lifeCount);
 
-    void setHUDVisibility(const float& alpha);
+    std::vector<Instance>& getInstances();
+    const BrickType&       getBrickData(const uint32_t& id) const;
+    const uint32_t&        getRemainingBrickCount() const;
+    const uint32_t&        getTotalBrickCount() const;
+    Instance* const        getBricksPtr();
+    const uint32_t&        destroyBrick();
 
-    const glm::vec2 getStartingBallDirection();
+    const glm::vec2 getWindowDimensions() const;
 
-    void resetPadAndBall();
-    Level(const char* fullPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight);
-    void destroy();
+    const glm::vec2 getStartingBallDirection() const;
+    const float&    getBasePadSpeed() const;
+    const float&    getBaseBallSpeed() const;
+    void            resetPadAndBall();
 
   private:
     std::string m_backgroundTexturePath = "";
 
-    DynamicData m_backup;
-    DynamicData m_inUse;
+    DynamicLevelData m_backup;
+    DynamicLevelData m_inUse;
 
-    uint32_t m_rowCount      = 0;
-    uint32_t m_columnCount   = 0;
-    uint32_t m_rowSpacing    = 0;
-    uint32_t m_columnSpacing = 0;
+    uint32_t m_rowCount;
+    uint32_t m_columnCount;
+    uint32_t m_rowSpacing;
+    uint32_t m_columnSpacing;
 
     uint32_t m_levelIndex      = 0;
     uint32_t m_totalBrickCount = 0;
@@ -107,18 +111,14 @@ class Level {
     uint32_t m_windowHeight = 0;
 
     uint32_t m_foregroundIndex = 0;
-
-    uint32_t m_titleIndex    = 0;
-    uint32_t m_subtitleIndex = 0;
-
-    uint32_t m_levelLabelIndex      = 0;
-    uint32_t m_levelCountStartIndex = 0;
-
-    uint32_t m_livesLabelIndex      = 0;
-    uint32_t m_livesCountStartIndex = 0;
-
-    uint32_t m_scoreLabelIndex      = 0;
-    uint32_t m_scoreCountStartIndex = 0;
+    uint32_t m_titleIndex;
+    uint32_t m_subtitleIndex;
+    uint32_t m_levelLabelIndex;
+    uint32_t m_levelCountStartIndex;
+    uint32_t m_livesLabelIndex;
+    uint32_t m_livesCountStartIndex;
+    uint32_t m_scoreLabelIndex;
+    uint32_t m_scoreCountStartIndex;
 
     glm::vec2 m_padInitialPosition;
     glm::vec2 m_ballInitialPosition;
@@ -133,8 +133,11 @@ class Level {
 
     std::map<uint32_t, BrickType> m_brickTypes;
 
-    Buffer   m_instanceBuffer;
-    uint32_t m_instanceDataBufferSize;
+    Renderer* const       m_renderer;
+    TextureManager* const m_textureManager;
+
+    std::unique_ptr<Buffer> m_instanceBuffer;
+    uint32_t                m_instanceDataBufferSize;
 
     void setNumber(const uint32_t& instanceIndex, const uint32_t& digitCount, uint32_t number);
 

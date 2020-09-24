@@ -130,17 +130,20 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         remainingTravelDistance -= distanceTraveled;
 
         switch (collisionData.type) {
-        case CollisionType::BRICK: {
-            collisionData.hitIndex = hitIndex;
-        }
-        case CollisionType::PAD:
-        case CollisionType::WALL: {
-            if (distanceTraveled < 0) {
-                collisionData.collisionTime = 0;
-            } else {
-                collisionData.collisionTime = distanceTraveled / ballSpeed;
+            case CollisionType::BRICK: {
+                collisionData.hitIndex = static_cast<uint32_t>(hitIndex);
             }
-        }
+                [[fallthrough]];
+            case CollisionType::PAD:
+                [[fallthrough]];
+            case CollisionType::WALL: {
+                if (distanceTraveled < 0) {
+                    collisionData.collisionTime = 0;
+                } else {
+                    collisionData.collisionTime = static_cast<uint32_t>(distanceTraveled / ballSpeed);
+                }
+                break;
+            }
         }
 
         if (collisionData.type != CollisionType::NONE) {

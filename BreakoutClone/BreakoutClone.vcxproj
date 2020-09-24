@@ -16,9 +16,9 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\physics.cpp" />
     <ClCompile Include="src\renderer.cpp" />
-    <ClCompile Include="src\resources.cpp" />
     <ClCompile Include="src\soundManager.cpp" />
     <ClCompile Include="src\swapchain.cpp" />
+    <ClCompile Include="src\textureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\breakout.h" />
@@ -27,10 +27,10 @@
     <ClInclude Include="src\level.h" />
     <ClInclude Include="src\physics.h" />
     <ClInclude Include="src\renderer.h" />
-    <ClInclude Include="src\resources.h" />
     <ClInclude Include="src\shaders\sharedStructures.h" />
     <ClInclude Include="src\soundManager.h" />
     <ClInclude Include="src\swapchain.h" />
+    <ClInclude Include="src\textureManager.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\shaders\fragmentShader.frag">

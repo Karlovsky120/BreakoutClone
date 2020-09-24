@@ -22,8 +22,7 @@ SoundManager::~SoundManager() {
 }
 
 Mix_Chunk* SoundManager::loadSound(const std::string& soundId) {
-    std::string path = std::filesystem::current_path().string();
-    path += SOUND_FOLDER + soundId;
+    std::string path = std::filesystem::current_path().string() + SOUND_FOLDER + soundId;
 
     m_sounds[soundId] = Mix_LoadWAV(path.c_str());
     return m_sounds[soundId];
