@@ -29,7 +29,9 @@ class Physics {
                             const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection, std::vector<CollisionData>& collisionInfo);
 
   private:
-    bool detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t);
     bool detectCollision(const glm::vec2& center1, const glm::vec2& rect1, glm::vec2& ballDirection, const float& ballSpeed, const glm::vec2& center2,
                          const glm::vec2& rect2, float& t);
+    bool detectSegmentCircleCollision(const glm::vec2& segmentStart, const glm::vec2& segmentDir, const glm::vec2& circleCenter, const float& circleRadius,
+                                      glm::vec2& reflectedDir);
+    bool detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t);
 };

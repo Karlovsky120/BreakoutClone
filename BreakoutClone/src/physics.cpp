@@ -68,22 +68,50 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
 
         float t;
 
-        glm::vec2 windowDimensions = level.getWindowDimensions();
-        glm::vec2 playAreaCenter   = {windowDimensions.x * 0.5f, windowDimensions.y * 0.5f};
-        glm::vec2 playAreaRect     = {windowDimensions.x - (2.0f * leftWallEdge), windowDimensions.y};
-
         // The walls
         glm::vec2 latestReflectedDirection = ballDirection;
-        // Pass inverted ball dimensions so minkowski sum is calculcated correctly since the edges are being tested from the inside
-        if (detectCollision(ballPosition, -ballScale, latestReflectedDirection, remainingTravelDistance, playAreaCenter, playAreaRect, t)) {
-            // If bottom edge is hit
-            if (ballDirection.y != latestReflectedDirection.y && latestReflectedDirection.y < 0.0f) {
-                return LevelState::LOST;
-            }
 
-            minimalT                    = t < minimalT ? t : minimalT;
-            reflectedDirectionOfClosest = latestReflectedDirection;
-            collisionData.type          = CollisionType::WALL;
+        glm::vec2 windowDimensions = level.getWindowDimensions();
+        float     left             = leftWallEdge + ballRadius;
+        float     right            = rightWallEdge - ballRadius;
+        float     top              = ballRadius;
+        float     bottom           = windowDimensions.y + ballRadius;
+
+        glm::vec2 topLeftCorner     = {left, top};
+        glm::vec2 topRightCorner    = {right, top};
+        glm::vec2 bottomLeftCorner  = {left, bottom};
+        glm::vec2 bottomRightCorner = {right, bottom};
+
+        // Bottom wall
+        if (detectSegmentsCollision(ballPosition, ballTravelPath, bottomLeftCorner, bottomRightCorner - bottomLeftCorner, t)) {
+            return LevelState::LOST;
+        }
+
+        // Top wall
+        if (detectSegmentsCollision(ballPosition, ballTravelPath, topLeftCorner, topRightCorner - topLeftCorner, t)) {
+            if (t < minimalT) {
+                minimalT                    = t;
+                reflectedDirectionOfClosest = {ballDirection.x, -ballDirection.y};
+                collisionData.type          = CollisionType::WALL;
+            }
+        }
+
+        // Left wall
+        if (detectSegmentsCollision(ballPosition, ballTravelPath, bottomLeftCorner, topLeftCorner - bottomLeftCorner, t)) {
+            if (t < minimalT) {
+                minimalT                    = t;
+                reflectedDirectionOfClosest = {-ballDirection.x, ballDirection.y};
+                collisionData.type          = CollisionType::WALL;
+            }
+        }
+
+        // Right wall
+        if (detectSegmentsCollision(ballPosition, ballTravelPath, bottomRightCorner, topRightCorner - bottomRightCorner, t)) {
+            if (t < minimalT) {
+                minimalT                    = t;
+                reflectedDirectionOfClosest = {-ballDirection.x, ballDirection.y};
+                collisionData.type          = CollisionType::WALL;
+            }
         }
 
         // The pad
@@ -216,6 +244,31 @@ bool Physics::detectCollision(const glm::vec2& center1, const glm::vec2& rect1, 
     }
 
     return collisionDetected;
+}
+
+bool Physics::detectSegmentCircleCollision(const glm::vec2& segmentStart, const glm::vec2& segmentDir, const glm::vec2& circleCenter, const float& circleRadius,
+                                           glm::vec2& reflectedDir) {
+    glm::vec2 f = segmentStart - circleCenter;
+
+    float a = glm::dot(segmentDir, segmentDir);
+    float b = 2 * glm::dot(f, segmentDir);
+    float c = glm::dot(f, f) - circleRadius * circleRadius;
+
+    float discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) {
+        return false;
+    } else {
+        discriminant = sqrt(discriminant);
+
+        float t = (-b - discriminant) / (2 * a);
+
+        if (t >= 0 && t <= 1) {
+            glm::vec2 normal        = glm::normalize(segmentDir * t - circleCenter);
+            glm::vec2 normalizedDir = glm::normalize(segmentDir);
+            reflectedDir            = normalizedDir - 2.0f * glm::dot(normalizedDir, normal) * normal;
+            return true;
+        }
+    }
 }
 
 bool Physics::detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t) {
