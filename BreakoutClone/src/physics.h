@@ -29,9 +29,13 @@ class Physics {
                             const float& padSpeedModifier /*pixels per microsecond*/, glm::vec2& ballDirection, std::vector<CollisionData>& collisionInfo);
 
   private:
-    bool detectCollision(const glm::vec2& center1, const glm::vec2& rect1, const glm::vec2& ballDirection, const float& ballSpeed, const glm::vec2& center2,
-                         const glm::vec2& rect2, float& t, glm::vec2& reflectedDirection);
-    bool detectSegmentCircleCollision(const glm::vec2& segmentStart, const glm::vec2& segmentDir, const glm::vec2& circleCenter, const float& circleRadius,
-                                      glm::vec2& reflectedDir);
-    bool detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t);
+    bool rectRectCollisionDynamic(const glm::vec2& rectCenter1, const glm::vec2& rectDimensions1, const glm::vec2& rectNormalizedVelocity1,
+                                  const float& rectSpeed1, const glm::vec2& rectCenter2, const glm::vec2& rectDimensions2, float& t,
+                                  glm::vec2& rectNormalizedReflectedVelocity1);
+    bool circleRectCollisionDynamic(const glm::vec2& circleCenter, const float& circleRadius, const glm::vec2& circleNormalizedVelocity,
+                                    const float& circleSpeed, const glm::vec2& rectCenter, const glm::vec2& rectDimensions, float& minimalT,
+                                    glm::vec2& circleNormalizedReflectedVelocity);
+    bool segmentCircleCollisionStatic(const glm::vec2& segmentStart, const glm::vec2& segmentDir, const glm::vec2& circleCenter, const float& circleRadius,
+                                      float& t, glm::vec2& reflectedDir);
+    bool segmentSegmentCollisionStatic(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t);
 };

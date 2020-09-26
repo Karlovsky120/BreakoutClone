@@ -48,7 +48,7 @@ class Breakout {
     bool m_quit = false;
 
     float     m_padControl;
-    glm::vec2 m_ballDirection;
+    glm::vec2 m_ballDirection = {0.0f, 0.0f};
 
     uint32_t  m_lifeCount = START_LIFE_COUNT;
     uint32_t  m_score     = 0;

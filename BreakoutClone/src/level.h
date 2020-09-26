@@ -20,8 +20,7 @@
 #define LEFT_WALL_INDEX   1
 #define RIGHT_WALL_INDEX  2
 #define PAD_INDEX         3
-#define BALL_INDEX        4
-#define BRICK_START_INDEX 5
+#define BRICK_START_INDEX 4
 
 #define LEVEL_COUNT_DIGITS 2
 #define LIFE_COUNT_DIGITS  2
@@ -32,7 +31,8 @@
 #define UI_LABEL_RATIO    3.0f
 #define UI_NUMBER_RATIO   1.0f
 
-#define PAD_SPEED_FACTOR  0.00000025f
+#define PAD_SPEED_FACTOR 0.00000025f
+//#define BALL_SPEED_FACTOR 0.00000005f
 #define BALL_SPEED_FACTOR 0.00000025f
 
 #define DEPTH_UI         0.2f
@@ -88,6 +88,7 @@ class Level {
 
     const glm::vec2 getWindowDimensions() const;
 
+    const uint32_t& getBallIndex() const;
     const glm::vec2 getStartingBallDirection() const;
     const float&    getBasePadSpeed() const;
     const float&    getBaseBallSpeed() const;
@@ -104,13 +105,14 @@ class Level {
     uint32_t m_rowSpacing;
     uint32_t m_columnSpacing;
 
-    uint32_t m_levelIndex      = 0;
-    uint32_t m_totalBrickCount = 0;
+    uint32_t m_levelIndex;
+    uint32_t m_totalBrickCount;
 
-    uint32_t m_windowWidth  = 0;
-    uint32_t m_windowHeight = 0;
+    uint32_t m_windowWidth;
+    uint32_t m_windowHeight;
 
-    uint32_t m_foregroundIndex = 0;
+    uint32_t m_ballIndex;
+    uint32_t m_foregroundIndex;
     uint32_t m_titleIndex;
     uint32_t m_subtitleIndex;
     uint32_t m_levelLabelIndex;

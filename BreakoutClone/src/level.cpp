@@ -84,6 +84,8 @@ const uint32_t& Level::destroyBrick() {
 
 const glm::vec2 Level::getWindowDimensions() const { return {m_windowWidth, m_windowHeight}; }
 
+const uint32_t& Level::getBallIndex() const { return m_ballIndex; }
+
 const glm::vec2 Level::getStartingBallDirection() const {
     float padXOffset = m_inUse.instances[PAD_INDEX].position.x - m_wallWidth - m_playAreaWidth * 0.5f;
     return glm::normalize(glm::vec2(padXOffset * 1.2f, -m_playAreaWidth));
@@ -94,8 +96,8 @@ const float& Level::getBasePadSpeed() const { return m_basePadSpeed; }
 const float& Level::getBaseBallSpeed() const { return m_baseBallSpeed; }
 
 void Level::resetPadAndBall() {
-    m_inUse.instances[PAD_INDEX].position  = m_padInitialPosition;
-    m_inUse.instances[BALL_INDEX].position = m_ballInitialPosition;
+    m_inUse.instances[PAD_INDEX].position   = m_padInitialPosition;
+    m_inUse.instances[m_ballIndex].position = m_ballInitialPosition;
 }
 
 void Level::setNumber(const uint32_t& instanceIndex, const uint32_t& digitCount, uint32_t number) {
@@ -227,7 +229,7 @@ void Level::generateRenderData() {
 
     uint32_t totalUiCount = 5 + LEVEL_COUNT_DIGITS + LIFE_COUNT_DIGITS + SCORE_COUNT_DIGITS;
 #pragma warning(suppress : 26451) // Arithmetic overflow : Using operator'+' on a 4 byte value and then casting the result to a 8 byte value
-    m_backup.instances = std::vector<Instance>(BRICK_START_INDEX + m_totalBrickCount + 1 + totalUiCount, defaultInstance);
+    m_backup.instances = std::vector<Instance>(BRICK_START_INDEX + m_totalBrickCount + 2 + totalUiCount, defaultInstance);
 
     // Background
     m_backup.instances[BACKGROUND_INDEX].position     = {m_windowWidth * 0.5f, m_windowHeight * 0.5f};
@@ -258,13 +260,6 @@ void Level::generateRenderData() {
     m_backup.instances[PAD_INDEX].scale        = padDimensions;
     m_backup.instances[PAD_INDEX].textureIndex = m_textureManager->getTextureId(TEXTURE_PAD);
 
-    // The ball
-    m_ballInitialPosition                       = {m_windowWidth * 0.5f, padOffset - (0.5f * padDimensions.y + ballRadius + 1.0f)};
-    m_backup.instances[BALL_INDEX].position     = m_ballInitialPosition;
-    m_backup.instances[BALL_INDEX].depth        = DEPTH_GAME;
-    m_backup.instances[BALL_INDEX].scale        = {2.0f * ballRadius, 2.0f * ballRadius};
-    m_backup.instances[BALL_INDEX].textureIndex = m_textureManager->getTextureId(TEXTURE_BALL);
-
     // Bricks
     uint32_t instanceDataIndex = BRICK_START_INDEX;
     float    offsetY           = m_rowSpacing + 0.5f * brickHeight;
@@ -290,6 +285,15 @@ void Level::generateRenderData() {
             ++instanceDataIndex;
         }
     }
+
+    // The ball
+    m_ballIndex                                  = instanceDataIndex;
+    m_ballInitialPosition                        = {m_windowWidth * 0.5f, padOffset - (0.5f * padDimensions.y + ballRadius + 1.0f)};
+    m_backup.instances[m_ballIndex].position     = m_ballInitialPosition;
+    m_backup.instances[m_ballIndex].depth        = DEPTH_GAME;
+    m_backup.instances[m_ballIndex].scale        = {2.0f * ballRadius, 2.0f * ballRadius};
+    m_backup.instances[m_ballIndex].textureIndex = m_textureManager->getTextureId(TEXTURE_BALL);
+    ++instanceDataIndex;
 
     // Foreground
     m_foregroundIndex                                  = instanceDataIndex;

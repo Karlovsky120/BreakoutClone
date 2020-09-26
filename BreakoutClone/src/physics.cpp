@@ -11,8 +11,8 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
                                  std::vector<CollisionData>& collisionInfo) {
     std::vector<Instance>& instances = level.getInstances();
 
-    glm::vec2& ballPosition = instances[BALL_INDEX].position;
-    glm::vec2& ballScale    = instances[BALL_INDEX].scale;
+    glm::vec2& ballPosition = instances[level.getBallIndex()].position;
+    glm::vec2& ballScale    = instances[level.getBallIndex()].scale;
     glm::vec2& padPosition  = instances[PAD_INDEX].position;
     glm::vec2& padScale     = instances[PAD_INDEX].scale;
 
@@ -31,24 +31,14 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
     if (padSpeed != 0.0) {
         float paddP = padSpeed * frameTime;
         float t;
-
-        float leftPadEdge  = padPosition.x - padScale.x * 0.5f;
-        float rightPadEdge = padPosition.x + padScale.x * 0.5f;
-
-        // if it would intersect the ball
-        glm::vec2 padMoveDirection = glm::vec2(SIGNUM(paddP), 0.0f);
+        bool  padOutsideBall = (padScale.y * 0.5f + ballScale.y * 0.5f < std::abs(padPosition.y - ballPosition.y)) ||
+                              (padScale.x * 0.5f + ballScale.x * 0.5f < std::abs(padPosition.x - ballPosition.x));
         glm::vec2 dummy;
-        if (detectCollision(padPosition, padScale, padMoveDirection, paddP, ballPosition, ballScale, t, dummy)) {
-            padPosition.x += paddP * t * (1.0f - EPSILON);
-            float leftLimit  = leftWallEdge + 2.1f * ballRadius + padScale.x * 0.5f;
-            float rightLimit = rightWallEdge - 2.1f * ballRadius - padScale.x * 0.5f;
-            padPosition.x    = std::clamp(padPosition.x, leftLimit, rightLimit);
-        } else if (leftPadEdge + paddP < leftWallEdge) { // if it would intersect the left wall
-            padPosition.x = leftWallEdge + padScale.x * 0.5f;
-        } else if (rightPadEdge + paddP > rightWallEdge) { // if it would intersect the right wall
-            padPosition.x = rightWallEdge - padScale.x * 0.5f;
-        } else {
-            padPosition.x += paddP;
+        if (padOutsideBall && !rectRectCollisionDynamic(padPosition, padScale, {SIGNUM(paddP), 0.0f}, std::abs(paddP), ballPosition, ballScale, t, dummy)) {
+            float mostLeft  = leftWallEdge + padScale.x * 0.5f;
+            float mostRight = rightWallEdge - padScale.x * 0.5f;
+
+            padPosition.x = std::clamp(padPosition.x + paddP, mostLeft, mostRight);
         }
     }
 
@@ -70,8 +60,6 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         float t;
 
         // The walls
-        glm::vec2 latestReflectedDirection = ballDirection;
-
         glm::vec2 windowDimensions = level.getWindowDimensions();
         float     left             = leftWallEdge + ballRadius;
         float     right            = rightWallEdge - ballRadius;
@@ -84,12 +72,17 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         glm::vec2 bottomRightCorner = {right, bottom};
 
         // Bottom wall
-        if (detectSegmentsCollision(ballPosition, ballTravelPath, bottomLeftCorner, bottomRightCorner - bottomLeftCorner, t)) {
-            return LevelState::LOST;
+        if (segmentSegmentCollisionStatic(ballPosition, ballTravelPath, bottomLeftCorner, bottomRightCorner - bottomLeftCorner, t)) {
+            // return LevelState::LOST;
+            if (t < minimalT) {
+                minimalT                    = t;
+                reflectedDirectionOfClosest = {ballDirection.x, -ballDirection.y};
+                collisionData.type          = CollisionType::WALL;
+            }
         }
 
         // Top wall
-        if (detectSegmentsCollision(ballPosition, ballTravelPath, topLeftCorner, topRightCorner - topLeftCorner, t)) {
+        if (segmentSegmentCollisionStatic(ballPosition, ballTravelPath, topLeftCorner, topRightCorner - topLeftCorner, t)) {
             if (t < minimalT) {
                 minimalT                    = t;
                 reflectedDirectionOfClosest = {ballDirection.x, -ballDirection.y};
@@ -98,7 +91,7 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         }
 
         // Left wall
-        if (detectSegmentsCollision(ballPosition, ballTravelPath, bottomLeftCorner, topLeftCorner - bottomLeftCorner, t)) {
+        if (segmentSegmentCollisionStatic(ballPosition, ballTravelPath, bottomLeftCorner, topLeftCorner - bottomLeftCorner, t)) {
             if (t < minimalT) {
                 minimalT                    = t;
                 reflectedDirectionOfClosest = {-ballDirection.x, ballDirection.y};
@@ -107,7 +100,7 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         }
 
         // Right wall
-        if (detectSegmentsCollision(ballPosition, ballTravelPath, bottomRightCorner, topRightCorner - bottomRightCorner, t)) {
+        if (segmentSegmentCollisionStatic(ballPosition, ballTravelPath, bottomRightCorner, topRightCorner - bottomRightCorner, t)) {
             if (t < minimalT) {
                 minimalT                    = t;
                 reflectedDirectionOfClosest = {-ballDirection.x, ballDirection.y};
@@ -116,32 +109,33 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
         }
 
         // The pad
-        if (detectCollision(ballPosition, ballScale, ballDirection, remainingTravelDistance, padPosition, padScale, t, latestReflectedDirection)) {
+        glm::vec2 latestReflectedDirection;
+        if (circleRectCollisionDynamic(ballPosition, ballRadius, ballDirection, remainingTravelDistance, padPosition, padScale, t, latestReflectedDirection)) {
             if (t < minimalT) {
                 minimalT           = t;
                 collisionData.type = CollisionType::PAD;
-                if (ballDirection.y == -latestReflectedDirection.y) {
+                /*if (ballDirection.y == -latestReflectedDirection.y) {
                     float collisionPoint        = (ballPosition + ballTravelPath * (ballRadius + t)).x;
-                    float padLeftCorner         = padPosition.x - 0.5f * padScale.x;
-                    float hitScale              = (collisionPoint - padLeftCorner) / padScale.x;
+                    float padLeftCorner         = padPosition.x - 0.5f * padScale.x + ballRadius;
+                    float hitScale              = (collisionPoint - padLeftCorner) / (padScale.x - 2.0f * ballRadius);
                     hitScale                    = hitScale * 2.0f - 1.0f;
                     reflectedDirectionOfClosest = glm::normalize(glm::vec2(hitScale * 1.0f, -1.0f));
-                } else {
-                    reflectedDirectionOfClosest = latestReflectedDirection;
-                }
+                } else {*/
+                reflectedDirectionOfClosest = latestReflectedDirection;
+                //}
             }
         }
 
         // The bricks
-        size_t          hitIndex   = UINT32_MAX;
-        const uint32_t& brickCount = level.getTotalBrickCount();
+        uint32_t        hitBrickIndex = UINT32_MAX;
+        const uint32_t& brickCount    = level.getTotalBrickCount();
         for (size_t i = 0; i < brickCount; ++i) {
-            if (bricks[i].health > 0 && detectCollision(ballPosition, ballScale, ballDirection, remainingTravelDistance, bricks[i].position, bricks[i].scale, t,
-                                                        latestReflectedDirection)) {
+            if (bricks[i].health > 0 && circleRectCollisionDynamic(ballPosition, ballRadius, ballDirection, remainingTravelDistance, bricks[i].position,
+                                                                   bricks[i].scale, t, latestReflectedDirection)) {
                 if (t < minimalT) {
                     minimalT                    = t;
                     reflectedDirectionOfClosest = latestReflectedDirection;
-                    hitIndex                    = i;
+                    hitBrickIndex               = static_cast<uint32_t>(i);
                     collisionData.type          = CollisionType::BRICK;
                 }
             }
@@ -161,7 +155,7 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
 
         switch (collisionData.type) {
             case CollisionType::BRICK: {
-                collisionData.hitIndex = static_cast<uint32_t>(hitIndex);
+                collisionData.hitIndex = hitBrickIndex;
             }
                 [[fallthrough]];
             case CollisionType::PAD:
@@ -184,23 +178,24 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
     return LevelState::STILL_ALIVE;
 }
 
-bool Physics::detectCollision(const glm::vec2& center1, const glm::vec2& rect1, const glm::vec2& ballDirection, const float& ballSpeed,
-                              const glm::vec2& center2, const glm::vec2& rect2, float& t, glm::vec2& reflectedDirection) {
+bool Physics::rectRectCollisionDynamic(const glm::vec2& rectCenter1, const glm::vec2& rectDimensions1, const glm::vec2& rectNormalizedVelocity1,
+                                       const float& rectSpeed1, const glm::vec2& rectCenter2, const glm::vec2& rectDimensions2, float& t,
+                                       glm::vec2& rectNormalizedReflectedVelocity1) {
 
-    glm::vec2 corner1 = center1 + 0.5f * rect1;
-    glm::vec2 corner2 = center2 + 0.5f * rect2;
+    glm::vec2 corner1 = rectCenter1 + 0.5f * rectDimensions1;
+    glm::vec2 corner2 = rectCenter2 + 0.5f * rectDimensions2;
 
-    float radius1 = glm::distance(center1, corner1);
-    float radius2 = glm::distance(center2, corner2);
+    float radius1 = glm::distance(rectCenter1, corner1);
+    float radius2 = glm::distance(rectCenter2, corner2);
 
-    float rectDistance = glm::distance(center1, center2);
+    float rectDistance = glm::distance(rectCenter1, rectCenter2);
 
-    if (rectDistance > radius1 + ballSpeed + radius2) {
+    if (rectDistance > radius1 + rectSpeed1 + radius2) {
         return false;
     }
 
-    glm::vec2 minkowskiMax = center2 + rect2 * 0.5f + rect1 * 0.5f;
-    glm::vec2 minkowskiMin = center2 - rect2 * 0.5f - rect1 * 0.5f;
+    glm::vec2 minkowskiMax = rectCenter2 + rectDimensions2 * 0.5f + rectDimensions1 * 0.5f;
+    glm::vec2 minkowskiMin = rectCenter2 - rectDimensions2 * 0.5f - rectDimensions1 * 0.5f;
 
     glm::vec2& topLeft     = minkowskiMin;
     glm::vec2  topRight    = {minkowskiMax.x, minkowskiMin.y};
@@ -211,73 +206,190 @@ bool Physics::detectCollision(const glm::vec2& center1, const glm::vec2& rect1, 
 
     float     edgeT;
     bool      collisionDetected = false;
-    glm::vec2 ballVelocity      = ballDirection * ballSpeed;
+    glm::vec2 rectVelocity1     = rectNormalizedVelocity1 * rectSpeed1;
 
     // Top edge
-    if (detectSegmentsCollision(center1, ballVelocity, topLeft, topRight - topLeft, edgeT)) {
+    if (segmentSegmentCollisionStatic(rectCenter1, rectVelocity1, topLeft, topRight - topLeft, edgeT)) {
         if (edgeT < t) {
-            t                  = edgeT;
-            collisionDetected  = true;
-            reflectedDirection = {ballDirection.x, -ballDirection.y};
+            t                                = edgeT;
+            collisionDetected                = true;
+            rectNormalizedReflectedVelocity1 = {rectNormalizedVelocity1.x, -rectNormalizedVelocity1.y};
         }
     }
 
     // Right edge
-    if (detectSegmentsCollision(center1, ballVelocity, topRight, bottomRight - topRight, edgeT)) {
+    if (segmentSegmentCollisionStatic(rectCenter1, rectVelocity1, topRight, bottomRight - topRight, edgeT)) {
         if (edgeT < t) {
-            t                  = edgeT;
-            collisionDetected  = true;
-            reflectedDirection = {-ballDirection.x, ballDirection.y};
+            t                                = edgeT;
+            collisionDetected                = true;
+            rectNormalizedReflectedVelocity1 = {-rectNormalizedVelocity1.x, rectNormalizedVelocity1.y};
         }
     }
 
     // Bottom edge
-    if (detectSegmentsCollision(center1, ballVelocity, bottomRight, bottomLeft - bottomRight, edgeT)) {
+    if (segmentSegmentCollisionStatic(rectCenter1, rectVelocity1, bottomRight, bottomLeft - bottomRight, edgeT)) {
         if (edgeT < t) {
-            t                  = edgeT;
-            collisionDetected  = true;
-            reflectedDirection = {ballDirection.x, -ballDirection.y};
+            t                                = edgeT;
+            collisionDetected                = true;
+            rectNormalizedReflectedVelocity1 = {rectNormalizedVelocity1.x, -rectNormalizedVelocity1.y};
         }
     }
 
     // Left edge
-    if (detectSegmentsCollision(center1, ballVelocity, bottomLeft, topLeft - bottomLeft, edgeT)) {
+    if (segmentSegmentCollisionStatic(rectCenter1, rectVelocity1, bottomLeft, topLeft - bottomLeft, edgeT)) {
         if (edgeT < t) {
-            t                  = edgeT;
-            collisionDetected  = true;
-            reflectedDirection = {-ballDirection.x, ballDirection.y};
+            t                                = edgeT;
+            collisionDetected                = true;
+            rectNormalizedReflectedVelocity1 = {-rectNormalizedVelocity1.x, rectNormalizedVelocity1.y};
         }
     }
 
     return collisionDetected;
 }
 
-bool Physics::detectSegmentCircleCollision(const glm::vec2& segmentStart, const glm::vec2& segmentDir, const glm::vec2& circleCenter, const float& circleRadius,
-                                           glm::vec2& reflectedDir) {
+bool Physics::circleRectCollisionDynamic(const glm::vec2& circleCenter, const float& circleRadius, const glm::vec2& circleNormalizedVelocity,
+                                         const float& circleSpeed, const glm::vec2& rectCenter, const glm::vec2& rectDimensions, float& t,
+                                         glm::vec2& circleNormalizedReflectedVelocity) {
+
+    glm::vec2 rectCorner          = rectCenter + 0.5f * rectDimensions;
+    float     rectExscribedRadius = glm::distance(rectCenter, rectCorner);
+
+    float rectDistance = glm::distance(circleCenter, rectCenter);
+
+    if (rectDistance > circleRadius + circleSpeed + rectExscribedRadius) {
+        return false;
+    }
+
+    glm::vec2 max = rectCenter + rectDimensions * 0.5f;
+    glm::vec2 min = rectCenter - rectDimensions * 0.5f;
+
+    glm::vec2& topLeft     = min;
+    glm::vec2  topRight    = {max.x, min.y};
+    glm::vec2& bottomRight = max;
+    glm::vec2  bottomLeft  = {min.x, max.y};
+
+    glm::vec2 minkowskiMax = rectCenter + rectDimensions * 0.5f + circleRadius;
+    glm::vec2 minkowskiMin = rectCenter - rectDimensions * 0.5f - circleRadius;
+
+    glm::vec2 topLeftMinkowski     = {min.x, minkowskiMin.y};
+    glm::vec2 topRightMinkowski    = {max.x, minkowskiMin.y};
+    glm::vec2 leftTopMinkowski     = {minkowskiMin.x, min.y};
+    glm::vec2 rightTopMinkowski    = {minkowskiMax.x, min.y};
+    glm::vec2 bottomLeftMinkowski  = {min.x, minkowskiMax.y};
+    glm::vec2 bottomRightMinkowski = {max.x, minkowskiMax.y};
+    glm::vec2 leftBottomMinkowski  = {minkowskiMin.x, max.y};
+    glm::vec2 rightBottomMinkowski = {minkowskiMax.x, max.y};
+
+    t = 2.0f;
+
+    float     partT;
+    bool      collisionDetected = false;
+    glm::vec2 ballVelocity      = circleNormalizedVelocity * circleSpeed;
+    glm::vec2 reflectedDir;
+
+    // Top edge
+    if (segmentSegmentCollisionStatic(circleCenter, ballVelocity, topLeftMinkowski, topRightMinkowski - topLeftMinkowski, partT)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = {circleNormalizedVelocity.x, -circleNormalizedVelocity.y};
+        }
+    }
+
+    // Right edge
+    if (segmentSegmentCollisionStatic(circleCenter, ballVelocity, rightTopMinkowski, rightBottomMinkowski - rightTopMinkowski, partT)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = {-circleNormalizedVelocity.x, circleNormalizedVelocity.y};
+        }
+    }
+
+    // Bottom edge
+    if (segmentSegmentCollisionStatic(circleCenter, ballVelocity, bottomRightMinkowski, bottomLeftMinkowski - bottomRightMinkowski, partT)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = {circleNormalizedVelocity.x, -circleNormalizedVelocity.y};
+        }
+    }
+
+    // Left edge
+    if (segmentSegmentCollisionStatic(circleCenter, ballVelocity, leftBottomMinkowski, leftTopMinkowski - leftBottomMinkowski, partT)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = {-circleNormalizedVelocity.x, circleNormalizedVelocity.y};
+        }
+    }
+
+    // Top left corner
+    if (segmentCircleCollisionStatic(circleCenter, ballVelocity, topLeft, circleRadius, partT, reflectedDir)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = reflectedDir;
+        }
+    }
+
+    // Top right corner
+    if (segmentCircleCollisionStatic(circleCenter, ballVelocity, topRight, circleRadius, partT, reflectedDir)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = reflectedDir;
+        }
+    }
+
+    // Bottom left corner
+    if (segmentCircleCollisionStatic(circleCenter, ballVelocity, bottomLeft, circleRadius, partT, reflectedDir)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = reflectedDir;
+        }
+    }
+
+    // Bottom right corner
+    if (segmentCircleCollisionStatic(circleCenter, ballVelocity, bottomRight, circleRadius, partT, reflectedDir)) {
+        if (partT < t) {
+            t                                 = partT;
+            collisionDetected                 = true;
+            circleNormalizedReflectedVelocity = reflectedDir;
+        }
+    }
+
+    return collisionDetected;
+}
+
+bool Physics::segmentCircleCollisionStatic(const glm::vec2& segmentStart, const glm::vec2& segmentDir, const glm::vec2& circleCenter, const float& circleRadius,
+                                           float& t, glm::vec2& reflectedDir) {
     glm::vec2 f = segmentStart - circleCenter;
 
     float a = glm::dot(segmentDir, segmentDir);
-    float b = 2 * glm::dot(f, segmentDir);
+    float b = 2.0f * glm::dot(f, segmentDir);
     float c = glm::dot(f, f) - circleRadius * circleRadius;
 
-    float discriminant = b * b - 4 * a * c;
+    float discriminant = b * b - 4.0f * a * c;
     if (discriminant < 0) {
         return false;
     } else {
         discriminant = sqrt(discriminant);
 
-        float t = (-b - discriminant) / (2 * a);
+        t = (-b - discriminant) / (2.0f * a);
 
-        if (t >= 0 && t <= 1) {
-            glm::vec2 normal        = glm::normalize(segmentDir * t - circleCenter);
+        if (t >= 0.0f && t <= 1.0f) {
+            glm::vec2 normal        = glm::normalize(segmentStart + segmentDir * t - circleCenter);
             glm::vec2 normalizedDir = glm::normalize(segmentDir);
             reflectedDir            = normalizedDir - 2.0f * glm::dot(normalizedDir, normal) * normal;
             return true;
         }
+
+        return false;
     }
 }
 
-bool Physics::detectSegmentsCollision(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t) {
+bool Physics::segmentSegmentCollisionStatic(const glm::vec2& start1, const glm::vec2 dir1, const glm::vec2& start2, const glm::vec2& dir2, float& t) {
     float directionsCross = CROSS2D(dir1, dir2);
 
     if (directionsCross == 0) {
