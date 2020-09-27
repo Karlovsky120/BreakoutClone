@@ -54,7 +54,7 @@ Renderer::Renderer() {
 
     m_stagingBuffer = createBuffer(STAGING_BUFFER_SIZE, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, "Staging buffer");
 
-    m_uniformBuffer = createBuffer(sizeof(UniformData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    m_uniformBuffer = createBuffer(sizeof(UniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "Uniform buffer");
 
     writeDescriptorSet();
@@ -512,7 +512,7 @@ void Renderer::createDescriptorLayout() {
 
     // Uniform buffer
     descriptorSetLayoutBindings[0].binding            = 0;
-    descriptorSetLayoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descriptorSetLayoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     descriptorSetLayoutBindings[0].descriptorCount    = 1;
     descriptorSetLayoutBindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
@@ -723,7 +723,7 @@ void Renderer::createPipeline() {
 }
 
 void Renderer::createDescriptorPool() {
-    std::array<VkDescriptorPoolSize, 1> descriptorPoolSizes = {{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
+    std::array<VkDescriptorPoolSize, 1> descriptorPoolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1}};
 
     VkDescriptorPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
     createInfo.poolSizeCount              = static_cast<uint32_t>(descriptorPoolSizes.size());
@@ -791,16 +791,15 @@ void Renderer::writeDescriptorSet() {
     descriptorBufferInfo.range                  = sizeof(UniformData);
 
     // Uniform buffer
-    std::array<VkWriteDescriptorSet, 1> writeDescriptorSets;
-    writeDescriptorSets[0]                 = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-    writeDescriptorSets[0].dstBinding      = 0;
-    writeDescriptorSets[0].dstArrayElement = 0;
-    writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    writeDescriptorSets[0].descriptorCount = 1;
-    writeDescriptorSets[0].pBufferInfo     = &descriptorBufferInfo;
-    writeDescriptorSets[0].dstSet          = m_descriptorSet;
+    VkWriteDescriptorSet writeDescriptorSet = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    writeDescriptorSet.dstBinding           = 0;
+    writeDescriptorSet.dstArrayElement      = 0;
+    writeDescriptorSet.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    writeDescriptorSet.descriptorCount      = 1;
+    writeDescriptorSet.pBufferInfo          = &descriptorBufferInfo;
+    writeDescriptorSet.dstSet               = m_descriptorSet;
 
-    vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+    vkUpdateDescriptorSets(m_device, 1, &writeDescriptorSet, 0, nullptr);
 }
 
 void Renderer::resetRenderCommandBuffers() {

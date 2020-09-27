@@ -22,13 +22,13 @@ layout(location = 2) out vec2  uvCoordsFrag;
 layout(location = 3) out uint  healthFrag;
 layout(location = 4) out uint  maxHealthFrag;
 
-layout(set = 0, binding = 0) readonly buffer UnifromBuffer {
+layout(set = 0, binding = 0) uniform UnifromBuffer {
     UniformData data;
 } ub;
 
 void main() {
     if (health == 0) {
-        gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+        gl_Position = vec4(-10.0, -10.0, -10.0, 1.0);
         return;
     }
 

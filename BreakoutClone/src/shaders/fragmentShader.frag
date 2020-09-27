@@ -12,7 +12,7 @@ layout(location = 4) flat in uint  maxHealth;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 0) readonly buffer UnifromBuffer {
+layout(set = 0, binding = 0) uniform UnifromBuffer {
     UniformData data;
 } ub;
 layout(set = 0, binding = 1) uniform sampler2D textures[MAX_TEXTURE_COUNT];
