@@ -157,13 +157,13 @@
 COPY "$(SolutionDir)external\sdl\lib\x64\SDL2_mixer.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o src/shaders/spirv/%(Filename).spv</Command>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o resources/shaders/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>
     </CustomBuild>
     <CustomBuild>
-      <Outputs>src/shaders/spirv/%(Filename).spv</Outputs>
+      <Outputs>resources/shaders/%(Filename).spv</Outputs>
       <BuildInParallel>true</BuildInParallel>
     </CustomBuild>
   </ItemDefinitionGroup>
@@ -194,13 +194,13 @@ COPY "$(SolutionDir)external\sdl\lib\x64\SDL2_mixer.dll" "$(ProjectDir)bin\$(Pla
 COPY "$(SolutionDir)external\sdl\lib\x64\SDL2_mixer.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o src/shaders/spirv/%(Filename).spv</Command>
+      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o resources/shaders/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>
     </CustomBuild>
     <CustomBuild>
-      <Outputs>src/shaders/spirv/%(Filename).spv</Outputs>
+      <Outputs>resources/shaders/%(Filename).spv</Outputs>
       <BuildInParallel>true</BuildInParallel>
     </CustomBuild>
   </ItemDefinitionGroup>

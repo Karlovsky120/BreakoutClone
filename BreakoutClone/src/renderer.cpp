@@ -562,8 +562,8 @@ void Renderer::createPipeline() {
     std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
     shaderStages.fill({VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO});
 
-    VkShaderModule vertexShader   = loadShader("src/shaders/spirv/vertexShader.spv");
-    VkShaderModule fragmentShader = loadShader("src/shaders/spirv/fragmentShader.spv");
+    VkShaderModule vertexShader   = loadShader("resources/shaders/vertexShader.spv");
+    VkShaderModule fragmentShader = loadShader("resources/shaders/fragmentShader.spv");
 
     shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
     shaderStages[0].module = vertexShader;
