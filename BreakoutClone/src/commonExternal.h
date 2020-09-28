@@ -4,8 +4,6 @@
 
 #pragma warning(push, 0)
 #pragma warning(disable : 26819) // Dereferencing NULL pointer.'*' contains the same NULL value as '*' did.
-#define VK_ENABLE_BETA_EXTENSIONS
-#include "volk.h"
 
 #include "SDL.h"
 #include "SDL_vulkan.h"

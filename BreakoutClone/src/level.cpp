@@ -28,9 +28,8 @@
 #include <algorithm>
 #include <sstream>
 
-Level::Level(const char* levelPath, const uint32_t& levelIndex, const uint32_t& windowWidth, const uint32_t& windowHeight, Renderer* const renderer,
-             TextureManager* const textureManager)
-    : m_levelIndex(levelIndex), m_windowWidth(windowWidth), m_windowHeight(windowHeight), m_renderer(renderer), m_textureManager(textureManager) {
+Level::Level(const char* levelPath, const uint32_t& windowWidth, const uint32_t& windowHeight, Renderer* const renderer, TextureManager* const textureManager)
+    : m_windowWidth(windowWidth), m_windowHeight(windowHeight), m_renderer(renderer), m_textureManager(textureManager) {
 
     parseXml(levelPath);
     generateRenderData();
@@ -44,7 +43,6 @@ void Level::load(const uint32_t& lifeCount, const uint32_t& score, const uint32_
     m_renderer->uploadToHostVisibleBuffer(m_inUse.instances.data(), m_instanceDataBufferSize, m_instanceBuffer->memory);
     m_renderer->updateTextureArray(m_textureManager->getTextureArray());
     m_renderer->recordRenderCommandBuffers(m_instanceBuffer->buffer, static_cast<uint32_t>(m_inUse.instances.size()));
-    m_inUse.commandBufferRecorded = true;
 
     setNumber(m_levelCountStartIndex, LEVEL_COUNT_DIGITS, levelIndex);
     setLifeCount(lifeCount);
@@ -57,11 +55,11 @@ void Level::setForegroundVisibility(const float& alpha) { m_inUse.instances[m_fo
 
 void Level::setTitleVisibility(const float& alpha) { m_inUse.instances[m_titleIndex].textureAlpha = alpha; }
 
-void Level::setTitle(const std::string& texturePath) { m_inUse.instances[m_titleIndex].textureIndex = m_textureManager->getTextureId(texturePath); }
+void Level::setTitle(const std::string& textureId) { m_inUse.instances[m_titleIndex].textureIndex = m_textureManager->getTextureId(textureId); }
 
 void Level::setSubtitleVisibility(const float& alpha) { m_inUse.instances[m_subtitleIndex].textureAlpha = alpha; }
 
-void Level::setSubtitle(const std::string& texturePath) { m_inUse.instances[m_subtitleIndex].textureIndex = m_textureManager->getTextureId(texturePath); }
+void Level::setSubtitle(const std::string& textureId) { m_inUse.instances[m_subtitleIndex].textureIndex = m_textureManager->getTextureId(textureId); }
 
 void Level::setScore(const uint32_t& score) { setNumber(m_scoreCountStartIndex, SCORE_COUNT_DIGITS, score); }
 
@@ -107,12 +105,12 @@ void Level::setNumber(const uint32_t& instanceIndex, const uint32_t& digitCount,
     }
 }
 
-void Level::parseXml(const char* fullPath) {
+void Level::parseXml(const char* fullLevelPath) {
     tinyxml2::XMLDocument levelXml;
 
-    if (levelXml.LoadFile(fullPath)) {
+    if (levelXml.LoadFile(fullLevelPath)) {
         char error[512];
-        sprintf_s(error, "Failed to open file at location %s!", fullPath);
+        sprintf_s(error, "Failed to open file at location %s!", fullLevelPath);
         throw std::runtime_error(error);
     }
 

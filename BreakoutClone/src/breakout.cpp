@@ -33,13 +33,10 @@ void Breakout::run() {
 }
 
 void Breakout::loadAllLevels() {
-    uint32_t    counter = 0;
-    std::string path    = std::filesystem::current_path().string() + LEVEL_FOLDER;
+    std::string path = std::filesystem::current_path().string() + LEVEL_FOLDER;
 
     for (const auto& file : std::filesystem::directory_iterator(path)) {
-        m_levels.push_back(
-            std::make_unique<Level>(file.path().string().c_str(), counter, WINDOW_WIDTH, WINDOW_HEIGHT, m_renderer.get(), m_textureManager.get()));
-        ++counter;
+        m_levels.push_back(std::make_unique<Level>(file.path().string().c_str(), WINDOW_WIDTH, WINDOW_HEIGHT, m_renderer.get(), m_textureManager.get()));
     }
 }
 
@@ -64,39 +61,6 @@ void Breakout::gameLoop() {
         m_stateTimeCounter += m_operatingFrametime;
         m_timeCounter += m_operatingFrametime;
         ++m_frameCount;
-
-        Instance* const bricks = m_currentLevel->getBricksPtr();
-        for (const CollisionData& collisionData : m_collisionInfo) {
-            uint32_t collisionTime = collisionData.collisionTime;
-            if (m_targetFrameTime != 0) {
-                if (collisionTime > elapsedFrametime) {
-                    std::this_thread::sleep_for(std::chrono::microseconds(collisionTime - elapsedFrametime));
-                    elapsedFrametime = collisionTime;
-                }
-            }
-
-            switch (collisionData.type) {
-                case CollisionType::WALL: {
-                    m_soundManager->playSound(SOUND_WALL);
-                    break;
-                }
-                case CollisionType::PAD: {
-                    m_soundManager->playSound(SOUND_PAD);
-                    break;
-                }
-                case CollisionType::BRICK: {
-                    const Instance&  brick     = bricks[collisionData.hitIndex];
-                    const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
-                    std::string      soundId;
-                    if (brick.health == 0) {
-                        m_soundManager->playSound(brickType.breakSoundPath);
-                    } else {
-                        m_soundManager->playSound(brickType.hitSoundPath);
-                    }
-                    break;
-                }
-            }
-        }
 
         if (m_operatingFrametime > elapsedFrametime) {
             std::this_thread::sleep_for(std::chrono::microseconds(m_operatingFrametime - elapsedFrametime));
@@ -133,16 +97,30 @@ void Breakout::doGame(const uint32_t& frameTime) {
                 case LevelState::STILL_ALIVE: {
                     Instance* const bricks = m_currentLevel->getBricksPtr();
                     for (CollisionData& collisionData : m_collisionInfo) {
-                        if (collisionData.type == CollisionType::BRICK) {
-                            Instance& brick = bricks[collisionData.hitIndex];
-                            if (brick.maxHealth < UINT32_MAX) {
-                                --brick.health;
-                                if (brick.health <= 0) {
+                        switch (collisionData.type) {
+                            case CollisionType::WALL: {
+                                m_soundManager->playSound(SOUND_WALL);
+                                break;
+                            }
+                            case CollisionType::PAD: {
+                                m_soundManager->playSound(SOUND_PAD);
+                                break;
+                            }
+                            case CollisionType::BRICK: {
+                                Instance& brick = bricks[collisionData.hitBrickIndex];
+                                if (brick.maxHealth < UINT32_MAX) {
+                                    --brick.health;
                                     const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
-                                    m_score += brickType.breakScore;
-                                    m_currentLevel->setScore(m_score);
-                                    m_currentLevel->destroyBrick();
+                                    if (brick.health <= 0) {
+                                        m_score += brickType.breakScore;
+                                        m_currentLevel->setScore(m_score);
+                                        m_currentLevel->destroyBrick();
+                                        m_soundManager->playSound(brickType.breakSoundPath);
+                                    } else {
+                                        m_soundManager->playSound(brickType.hitSoundPath);
+                                    }
                                 }
+                                break;
                             }
                         }
                     }
@@ -167,6 +145,7 @@ void Breakout::doGame(const uint32_t& frameTime) {
                         m_currentLevel->setTitle(TEXTURE_UI_GAME_OVER);
                         m_gameState = GameState::LOSE_GAME;
                     } else {
+                        m_soundManager->playSound(SOUND_WILHELM);
                         m_currentLevel->resetPadAndBall();
                         m_currentLevel->setSubtitle(TEXTURE_UI_RELEASE);
                         m_currentLevel->setSubtitleVisibility(1.0f);

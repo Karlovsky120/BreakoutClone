@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+/// Ensures that shared GLSL structures are compiled for C++
 #define CPP_SHADER_STRUCTURE
 
 #define VECTOR_SIZE_IN_BYTES(vector) (static_cast<uint32_t>(vector.size()) * sizeof(vector[0]))

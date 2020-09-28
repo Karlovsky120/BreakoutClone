@@ -27,18 +27,53 @@
 class Renderer;
 struct Image;
 
+/// <summary>
+/// Class used to load and manage texture.
+/// </summary>
 class TextureManager {
   public:
+    /// <summary>
+    /// Creates texture manager.
+    /// </summary>
+    /// <param name="renderer">Pointer to the global renderer.</param>
     TextureManager(Renderer* const renderer);
     ~TextureManager();
 
-    const uint32_t                             getTextureId(const std::string& texturePath, const float& scale = 1.0f);
+    /// <summary>
+    /// Returns the texture id of the requested texture, at the requested scale. If the texture is not yet loaded, loads it.
+    /// </summary>
+    /// <param name="textureId">Path to the texture relative to the texturs folder.</param>
+    /// <param name="scale">Scale of the texture.</param>
+    /// <returns>Id of the requested texture.</returns>
+    const uint32_t getTextureId(const std::string& textureId, const float& scale = 1.0f);
+
+    /// <summary>
+    /// Returns the vector of texture for use with the renderer.
+    /// </summary>
+    /// <returns>The vector of textures.</returns>
     const std::vector<std::unique_ptr<Image>>& getTextureArray() const;
 
   private:
-    Renderer*                           m_renderer;
-    std::map<std::string, uint32_t>     m_textureMap;
+    /// <summary>
+    /// pointer to global renderer.
+    /// </summary>
+    Renderer* m_renderer;
+
+    /// <summary>
+    /// Map of all loaded textures.
+    /// </summary>
+    std::map<std::string, uint32_t> m_textureMap;
+
+    /// <summary>
+    /// Images holding the textures.
+    /// </summary>
     std::vector<std::unique_ptr<Image>> m_textures;
 
+    /// <summary>
+    /// Loads the texture.
+    /// </summary>
+    /// <param name="pathToTexture">Path to the texture relative to the textures folder.</param>
+    /// <param name="scale">Scale at which the texture is to be loaded.</param>
+    /// <returns>The id of loaded texture.</returns>
     const uint32_t loadTexture(const std::string& pathToTexture, const float& scale = 1.0f);
 };

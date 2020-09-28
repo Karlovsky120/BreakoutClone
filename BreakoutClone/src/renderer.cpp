@@ -23,7 +23,7 @@ Renderer::Renderer() {
 
     vkGetDeviceQueue(m_device, m_queueFamilyIndex, 0, &m_queue);
 
-    m_transferCommandPool = createCommandPool();
+    createCommandPool();
 
     VkSurfaceFormatKHR surfaceFormat = {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
     m_swapchain                      = std::make_unique<Swapchain>(m_window, m_surface, m_physicalDevice, m_device, m_queueFamilyIndex, surfaceFormat);
@@ -47,7 +47,6 @@ Renderer::Renderer() {
     createDescriptorPool();
     allocateDescriptorSet();
 
-    m_renderCommandPool = createCommandPool();
     allocateRenderCommandBuffers();
     createSyncObjects();
 
@@ -80,10 +79,9 @@ Renderer::~Renderer() {
         vkDestroyFence(m_device, fence, nullptr);
     }
 
-    vkFreeCommandBuffers(m_device, m_renderCommandPool, m_swapchainImageCount, m_renderCommandBuffers.data());
+    vkFreeCommandBuffers(m_device, m_commandPool, m_swapchainImageCount, m_renderCommandBuffers.data());
 
-    vkDestroyCommandPool(m_device, m_renderCommandPool, nullptr);
-    vkDestroyCommandPool(m_device, m_transferCommandPool, nullptr);
+    vkDestroyCommandPool(m_device, m_commandPool, nullptr);
 
     vkDestroyPipeline(m_device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
@@ -121,7 +119,7 @@ Renderer::~Renderer() {
     SDL_Quit();
 }
 
-void Renderer::showWindow() { SDL_ShowWindow(m_window); }
+void Renderer::showWindow() const { SDL_ShowWindow(m_window); }
 
 void Renderer::waitIdle() const { vkDeviceWaitIdle(m_device); }
 
@@ -244,7 +242,7 @@ void Renderer::uploadToDeviceLocalImage(const void* data, const uint32_t& imageS
     vkUnmapMemory(m_device, m_stagingBuffer->memory);
 
     VkCommandBufferAllocateInfo transferCommandBufferAllocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-    transferCommandBufferAllocateInfo.commandPool                 = m_transferCommandPool;
+    transferCommandBufferAllocateInfo.commandPool                 = m_commandPool;
     transferCommandBufferAllocateInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     transferCommandBufferAllocateInfo.commandBufferCount          = 1;
 
@@ -285,7 +283,7 @@ void Renderer::uploadToDeviceLocalImage(const void* data, const uint32_t& imageS
     VK_CHECK(vkQueueSubmit(m_queue, 1, &transferSubmitInfo, VK_NULL_HANDLE));
     vkDeviceWaitIdle(m_device);
 
-    vkFreeCommandBuffers(m_device, m_transferCommandPool, 1, &transferCommandBuffer);
+    vkFreeCommandBuffers(m_device, m_commandPool, 1, &transferCommandBuffer);
 }
 
 void Renderer::uploadToHostVisibleBuffer(const void* data, const uint32_t& bufferSize, const VkDeviceMemory& bufferMemory) {
@@ -427,6 +425,14 @@ void Renderer::createDevice() {
 
     VK_CHECK(vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device));
     volkLoadDevice(m_device);
+}
+
+void Renderer::createCommandPool() {
+    VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+    createInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    createInfo.queueFamilyIndex        = m_queueFamilyIndex;
+
+    VK_CHECK(vkCreateCommandPool(m_device, &createInfo, nullptr, &m_commandPool));
 }
 
 void Renderer::createRenderPass() {
@@ -747,7 +753,7 @@ void Renderer::allocateRenderCommandBuffers() {
     VkCommandBufferAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     allocateInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocateInfo.commandBufferCount          = m_swapchainImageCount;
-    allocateInfo.commandPool                 = m_renderCommandPool;
+    allocateInfo.commandPool                 = m_commandPool;
 
     m_renderCommandBuffers = std::vector<VkCommandBuffer>(m_swapchainImageCount);
     for (size_t i = 0; i < m_swapchainImageCount; ++i) {
@@ -805,7 +811,7 @@ void Renderer::writeDescriptorSet() {
 
 void Renderer::resetRenderCommandBuffers() {
     vkDeviceWaitIdle(m_device);
-    vkFreeCommandBuffers(m_device, m_renderCommandPool, m_swapchainImageCount, m_renderCommandBuffers.data());
+    vkFreeCommandBuffers(m_device, m_commandPool, m_swapchainImageCount, m_renderCommandBuffers.data());
 
     m_renderCommandBuffers.clear();
     allocateRenderCommandBuffers();
@@ -843,17 +849,6 @@ void Renderer::recordRenderCommandBuffer(const uint32_t& frameIndex, const VkBuf
     vkCmdEndRenderPass(m_renderCommandBuffers[frameIndex]);
 
     VK_CHECK(vkEndCommandBuffer(m_renderCommandBuffers[frameIndex]));
-}
-
-const VkCommandPool Renderer::createCommandPool() {
-    VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-    createInfo.flags                   = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    createInfo.queueFamilyIndex        = m_queueFamilyIndex;
-
-    VkCommandPool commandPool = 0;
-    VK_CHECK(vkCreateCommandPool(m_device, &createInfo, nullptr, &commandPool));
-
-    return commandPool;
 }
 
 const uint32_t Renderer::getGenericQueueFamilyIndex(const VkPhysicalDevice& physicalDevice) const {
@@ -950,7 +945,7 @@ void Renderer::uploadToDeviceLocalBuffer(const void* data, const uint32_t& buffe
     vkUnmapMemory(m_device, m_stagingBuffer->memory);
 
     VkCommandBufferAllocateInfo transferCommandBufferAllocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-    transferCommandBufferAllocateInfo.commandPool                 = m_transferCommandPool;
+    transferCommandBufferAllocateInfo.commandPool                 = m_commandPool;
     transferCommandBufferAllocateInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     transferCommandBufferAllocateInfo.commandBufferCount          = 1;
 
@@ -974,7 +969,7 @@ void Renderer::uploadToDeviceLocalBuffer(const void* data, const uint32_t& buffe
     VK_CHECK(vkQueueSubmit(m_queue, 1, &transferSubmitInfo, VK_NULL_HANDLE));
     vkDeviceWaitIdle(m_device);
 
-    vkFreeCommandBuffers(m_device, m_transferCommandPool, 1, &transferCommandBuffer);
+    vkFreeCommandBuffers(m_device, m_commandPool, 1, &transferCommandBuffer);
 }
 
 const VkImage Renderer::createVkImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat) {
