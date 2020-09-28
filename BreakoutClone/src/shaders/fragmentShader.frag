@@ -21,7 +21,7 @@ void main() {
     outColor = textureAlpha * texture(textures[textureIndex], uvCoords);
     if (health < maxHealth) {
         vec4 crackTexture = texture(textures[ub.data.crackedTextureId], uvCoords);
-        crackTexture.w = crackTexture.w * (1 - float(health) / float(maxHealth));
+        crackTexture.w = crackTexture.w * (1 - float(health-1) / float(maxHealth-1));
         outColor = (1 - crackTexture.w) * outColor + crackTexture.w * crackTexture;
     }
 }

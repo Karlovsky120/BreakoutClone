@@ -45,24 +45,24 @@
   <Bricks>
     _ H _ H _ H _ H _ H _ H _ H _ H _ H _ H _ H _
     _ _ H _ H _ H _ H _ H _ H _ H _ H _ H _ H _ _
-	_ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _
-	_ _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ _
-	_ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _
-	_ _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ _
-	_ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _
-	_ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _
-	_ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _
-	_ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _
-	_ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _
-	_ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _
+    _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _
+    _ _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ _
+    _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _
+    _ _ M _ M _ M _ M _ M _ M _ M _ M _ M _ M _ _
+    _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _
+    _ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _
+    _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _
+    _ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _
+    _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _
+    _ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _
     _ _ _ S _ S _ S _ S _ _ _ S _ S _ S _ S _ _ _
     _ _ _ _ S _ S _ S _ _ _ _ _ S _ S _ S _ _ _ _
-	_ _ _ _ _ S _ S _ _ _ _ _ _ _ S _ S _ _ _ _ _
-	_ _ _ _ _ _ S _ _ _ _ S _ _ _ _ S _ _ _ _ _ _
-	_ _ _ _ _ _ _ S _ _ _ _ _ _ _ S _ _ _ _ _ _ _
-	_ _ _ _ _ _ _ _ S _ _ _ _ _ S _ _ _ _ _ _ _ _
-	_ _ _ _ _ _ _ _ _ S _ _ _ S _ _ _ _ _ _ _ _ _
-	_ _ _ _ _ _ _ _ _ _ S _ S _ _ _ _ _ _ _ _ _ _
-	_ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _
+    _ _ _ _ _ S _ S _ _ _ _ _ _ _ S _ S _ _ _ _ _
+    _ _ _ _ _ _ S _ _ _ _ S _ _ _ _ S _ _ _ _ _ _
+    _ _ _ _ _ _ _ S _ _ _ _ _ _ _ S _ _ _ _ _ _ _
+    _ _ _ _ _ _ _ _ S _ _ _ _ _ S _ _ _ _ _ _ _ _
+    _ _ _ _ _ _ _ _ _ S _ _ _ S _ _ _ _ _ _ _ _ _
+    _ _ _ _ _ _ _ _ _ _ S _ S _ _ _ _ _ _ _ _ _ _
+    _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _
   </Bricks>
 </Level>

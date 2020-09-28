@@ -138,6 +138,7 @@ void Breakout::doGame(const uint32_t& frameTime) {
                     break;
                 }
                 case LevelState::LOST: {
+                    m_soundManager->playSound(SOUND_WILHELM);
                     --m_lifeCount;
                     m_currentLevel->setLifeCount(m_lifeCount);
                     if (m_lifeCount == 0) {
@@ -145,7 +146,6 @@ void Breakout::doGame(const uint32_t& frameTime) {
                         m_currentLevel->setTitle(TEXTURE_UI_GAME_OVER);
                         m_gameState = GameState::LOSE_GAME;
                     } else {
-                        m_soundManager->playSound(SOUND_WILHELM);
                         m_currentLevel->resetPadAndBall();
                         m_currentLevel->setSubtitle(TEXTURE_UI_RELEASE);
                         m_currentLevel->setSubtitleVisibility(1.0f);

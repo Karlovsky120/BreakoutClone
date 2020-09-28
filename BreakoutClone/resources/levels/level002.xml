@@ -43,34 +43,34 @@
   </BrickTypes>
 
   <Bricks>
-	H _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H
-	H _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H
-	H _ _ _ _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ _ _ _ H
-	H _ _ I _ S I _ _ I _ S I S S I S S I S _ I _ _ I S _ I _ _ H
-	H _ _ _ _ S _ _ M _ M _ M _ M S M _ M _ M _ M _ _ S _ _ _ _ H
-	H _ _ _ _ S _ M I M I M I M M S M M I M I M I M _ S _ _ _ _ H
-	H _ _ _ _ S _ _ M _ M _ M _ M S M _ M _ M _ M _ _ S _ _ _ _ H
-	H _ S _ _ S S _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ S S _ _ S _ H
-	H _ _ _ _ _ S S S S S S S S S S S S S S S S S S S _ _ _ _ _ H
-	I _ _ _ _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ _ _ _ I
-	_ I M M M M M M M M M M M M M S M M M M M M M M M M M M M I _
-	_ _ I _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ I _ _
-	_ _ _ I _ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _ I _ _ _
-	_ _ _ _ I _ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _ I _ _ _ _
-	_ _ _ _ _ I _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ I _ _ _ _ _
-	_ _ _ _ _ _ I H H H H H H M M M M H H H H H H H I _ _ _ _ _ _
-	_ _ _ _ _ I S S H _ _ _ _ M M M M M _ _ _ _ H S S I _ _ _ _ _
-	_ _ _ _ I S S H _ _ _ _ _ _ M H M _ _ _ _ _ _ H S S I _ _ _ _
-	_ _ _ I S S H _ _ _ _ S _ _ _ M _ _ _ S _ _ _ _ H S S I _ _ _
-	_ _ I S S H _ _ _ _ S M S _ _ _ _ _ S M S _ _ _ _ H S S I _ _
-	_ I S S H _ _ _ _ _ _ S _ _ _ _ _ _ _ S _ _ _ _ _ _ H S S I _
-	I S S H _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ H S S I
-	S S H _ _ _ M _ _ _ _ _ _ _ S M S _ _ _ _ _ _ _ M _ _ _ H S S
-	H H _ _ _ M _ _ _ S _ _ _ _ _ S _ _ _ _ _ S _ _ _ M _ _ _ H H
-	_ _ _ _ M _ _ _ S M S _ _ _ _ _ _ _ _ _ S M S _ _ _ M _ _ _ _
-	_ _ _ M _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ M _ _ _
-	_ _ M _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ M _ _
-	_ M _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ M _
-	M _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ M
+    H _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H
+    H _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H
+    H _ _ _ _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ _ _ _ H
+    H _ _ I _ S I _ _ I _ S I S S I S S I S _ I _ _ I S _ I _ _ H
+    H _ _ _ _ S _ _ M _ M _ M _ M S M _ M _ M _ M _ _ S _ _ _ _ H
+    H _ _ _ _ S _ M I M I M I M M S M M I M I M I M _ S _ _ _ _ H
+    H _ _ _ _ S _ _ M _ M _ M _ M S M _ M _ M _ M _ _ S _ _ _ _ H
+    H _ S _ _ S S _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ S S _ _ S _ H
+    H _ _ _ _ _ S S S S S S S S S S S S S S S S S S S _ _ _ _ _ H
+    I _ _ _ _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ _ _ _ I
+    _ I M M M M M M M M M M M M M S M M M M M M M M M M M M M I _
+    _ _ I _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ I _ _
+    _ _ _ I _ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _ I _ _ _
+    _ _ _ _ I _ _ S _ S _ S _ S _ S _ S _ S _ S _ S _ _ I _ _ _ _
+    _ _ _ _ _ I _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ I _ _ _ _ _
+    _ _ _ _ _ _ I H H H H H H M M M M H H H H H H H I _ _ _ _ _ _
+    _ _ _ _ _ I S S H _ _ _ _ M M M M M _ _ _ _ H S S I _ _ _ _ _
+    _ _ _ _ I S S H _ _ _ _ _ _ M H M _ _ _ _ _ _ H S S I _ _ _ _
+    _ _ _ I S S H _ _ _ _ S _ _ _ M _ _ _ S _ _ _ _ H S S I _ _ _
+    _ _ I S S H _ _ _ _ S M S _ _ _ _ _ S M S _ _ _ _ H S S I _ _
+    _ I S S H _ _ _ _ _ _ S _ _ _ _ _ _ _ S _ _ _ _ _ _ H S S I _
+    I S S H _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ H S S I
+    S S H _ _ _ M _ _ _ _ _ _ _ S M S _ _ _ _ _ _ _ M _ _ _ H S S
+    H H _ _ _ M _ _ _ S _ _ _ _ _ S _ _ _ _ _ S _ _ _ M _ _ _ H H
+    _ _ _ _ M _ _ _ S M S _ _ _ _ _ _ _ _ _ S M S _ _ _ M _ _ _ _
+    _ _ _ M _ _ _ _ _ S _ _ _ _ _ _ _ _ _ _ _ S _ _ _ _ _ M _ _ _
+    _ _ M _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ M _ _
+    _ M _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ M _
+    M _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ M
   </Bricks>
 </Level>

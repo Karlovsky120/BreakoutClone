@@ -43,20 +43,55 @@
   <ItemGroup>
     <Image Include="resources\textures\ball.png" />
     <Image Include="resources\textures\boards\background1.png" />
+    <Image Include="resources\textures\boards\background2.png" />
+    <Image Include="resources\textures\boards\background3.png" />
+    <Image Include="resources\textures\boards\background4.png" />
+    <Image Include="resources\textures\boards\background5.png" />
+    <Image Include="resources\textures\boards\foreground.png" />
     <Image Include="resources\textures\bricks\brick.png" />
+    <Image Include="resources\textures\bricks\cracks.png" />
     <Image Include="resources\textures\bricks\metal.png" />
     <Image Include="resources\textures\bricks\paper.png" />
     <Image Include="resources\textures\bricks\wood.png" />
     <Image Include="resources\textures\pad.png" />
-    <Image Include="resources\textures\transparent.png" />
+    <Image Include="resources\textures\ui\0.png" />
+    <Image Include="resources\textures\ui\1.png" />
+    <Image Include="resources\textures\ui\2.png" />
+    <Image Include="resources\textures\ui\3.png" />
+    <Image Include="resources\textures\ui\4.png" />
+    <Image Include="resources\textures\ui\5.png" />
+    <Image Include="resources\textures\ui\6.png" />
+    <Image Include="resources\textures\ui\7.png" />
+    <Image Include="resources\textures\ui\8.png" />
+    <Image Include="resources\textures\ui\9.png" />
+    <Image Include="resources\textures\ui\gameOver.png" />
+    <Image Include="resources\textures\ui\level.png" />
+    <Image Include="resources\textures\ui\levelComplete.png" />
+    <Image Include="resources\textures\ui\lives.png" />
+    <Image Include="resources\textures\ui\loadingLevel.png" />
+    <Image Include="resources\textures\ui\pressSpaceToReleaseTheBall.png" />
+    <Image Include="resources\textures\ui\pressSpaceToTryAgain.png" />
+    <Image Include="resources\textures\ui\score.png" />
+    <Image Include="resources\textures\ui\victory.png" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="resources\levels\level001.xml" />
     <Xml Include="resources\levels\level002.xml" />
     <Xml Include="resources\levels\level003.xml" />
-    <Xml Include="resources\levels\level010.xml" />
-    <Xml Include="resources\levels\level034.xml" />
-    <Xml Include="resources\levels\level245.xml" />
+    <Xml Include="resources\levels\level004.xml" />
+    <Xml Include="resources\levels\level005.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="resources\sounds\brickBreak.wav" />
+    <Media Include="resources\sounds\brickHit.wav" />
+    <Media Include="resources\sounds\metalBreak.wav" />
+    <Media Include="resources\sounds\metalHit.wav" />
+    <Media Include="resources\sounds\pad.wav" />
+    <Media Include="resources\sounds\paperBreak.wav" />
+    <Media Include="resources\sounds\wall.wav" />
+    <Media Include="resources\sounds\wilhelm.wav" />
+    <Media Include="resources\sounds\woodBreak.wav" />
+    <Media Include="resources\sounds\woodHit.wav" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

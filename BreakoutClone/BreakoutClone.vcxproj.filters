@@ -28,6 +28,12 @@
     <Filter Include="Resource Files\textures\boards">
       <UniqueIdentifier>{b285ad12-19bd-4f11-9f0a-309ef5ce38e2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\textures\ui">
+      <UniqueIdentifier>{933eacb8-88bd-4478-8ab0-cb8905ee0892}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\sounds">
+      <UniqueIdentifier>{b7366adf-e81b-436c-9375-11b8096726c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -117,8 +123,80 @@
     <Image Include="resources\textures\pad.png">
       <Filter>Resource Files\textures</Filter>
     </Image>
-    <Image Include="resources\textures\transparent.png">
-      <Filter>Resource Files\textures</Filter>
+    <Image Include="resources\textures\boards\background2.png">
+      <Filter>Resource Files\textures\boards</Filter>
+    </Image>
+    <Image Include="resources\textures\boards\background3.png">
+      <Filter>Resource Files\textures\boards</Filter>
+    </Image>
+    <Image Include="resources\textures\boards\background4.png">
+      <Filter>Resource Files\textures\boards</Filter>
+    </Image>
+    <Image Include="resources\textures\boards\foreground.png">
+      <Filter>Resource Files\textures\boards</Filter>
+    </Image>
+    <Image Include="resources\textures\bricks\cracks.png">
+      <Filter>Resource Files\textures\bricks</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\0.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\1.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\2.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\3.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\4.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\5.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\6.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\7.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\8.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\9.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\gameOver.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\level.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\levelComplete.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\lives.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\loadingLevel.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\pressSpaceToReleaseTheBall.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\pressSpaceToTryAgain.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\score.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\ui\victory.png">
+      <Filter>Resource Files\textures\ui</Filter>
+    </Image>
+    <Image Include="resources\textures\boards\background5.png">
+      <Filter>Resource Files\textures\boards</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
@@ -131,14 +209,43 @@
     <Xml Include="resources\levels\level003.xml">
       <Filter>Resource Files\levels</Filter>
     </Xml>
-    <Xml Include="resources\levels\level010.xml">
+    <Xml Include="resources\levels\level004.xml">
       <Filter>Resource Files\levels</Filter>
     </Xml>
-    <Xml Include="resources\levels\level034.xml">
+    <Xml Include="resources\levels\level005.xml">
       <Filter>Resource Files\levels</Filter>
     </Xml>
-    <Xml Include="resources\levels\level245.xml">
-      <Filter>Resource Files\levels</Filter>
-    </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="resources\sounds\brickBreak.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\brickHit.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\metalBreak.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\metalHit.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\pad.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\paperBreak.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\wall.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\wilhelm.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\woodBreak.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
+    <Media Include="resources\sounds\woodHit.wav">
+      <Filter>Resource Files\sounds</Filter>
+    </Media>
   </ItemGroup>
 </Project>

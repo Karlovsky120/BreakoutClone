@@ -105,7 +105,7 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
 
         // The pad
         glm::vec2 latestReflectedDirection;
-        if (circleRectCollisionDynamic(ballPosition, ballRadius, ballDirection, remainingTravelDistance, padPosition, padScale, t, latestReflectedDirection)) {
+        if (rectRectCollisionDynamic(ballPosition, ballScale, ballDirection, remainingTravelDistance, padPosition, padScale, t, latestReflectedDirection)) {
             if (t < minimalT) {
                 minimalT           = t;
                 collisionData.type = CollisionType::PAD;

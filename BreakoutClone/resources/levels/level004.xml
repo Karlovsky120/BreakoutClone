@@ -3,7 +3,7 @@
 	ColumnCount="20"
 	RowSpacing="3"
 	ColumnSpacing="3"
-	BackgroundTexture="boards\background1.png">
+	BackgroundTexture="boards\background4.png">
 
   <BrickTypes>
 
@@ -45,23 +45,23 @@
   <Bricks>
     H H H H H H H H H H H H H H H H H H H H
     M M I I M M M M M M M M M M M M I I M M
-	H H H H H H H H H H H H H H H H H H H H
-	H H H H H _ _ H H H H H H H _ _ H H H H
-	M M I I M M M M M M M M M M M M I I M M
-	M M I I M M M M _ _ _ _ M M M M I I M M
-	M M I I M M M M _ _ _ _ M M M M I I M M
+    H H H H H H H H H H H H H H H H H H H H
+    H H H H H _ _ H H H H H H H _ _ H H H H
+    M M I I M M M M M M M M M M M M I I M M
+    M M I I M M M M _ _ _ _ M M M M I I M M
+    M M I I M M M M _ _ _ _ M M M M I I M M
     _ S S S _ S S S S _ _ S S S S _ S S S _
     _ _ S S S S S S S S S S S S S S S S _ _
     _ _ _ S S S S S S _ _ S S S S S S _ _ _
-	_ _ _ _ S S S S _ _ _ _ S S S S _ _ _ _
-	_ _ _ _ _ S S M _ _ _ _ M S S _ _ _ _ _
-	_ S S M M S S S S M M S S S S M M S S _
+    _ _ _ _ S S S S _ _ _ _ S S S S _ _ _ _
+    _ _ _ _ _ S S M _ _ _ _ M S S _ _ _ _ _
+    _ S S M M S S S S M M S S S S M M S S _
     _ _ S S S S S S S S S S S S S S S S _ _
     _ _ _ S S S S S S _ _ S S S S S S _ _ _
-	_ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
-	_ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
-	_ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
-	_ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
-	_ _ _ I I _ _ I I _ _ I I _ _ I I _ _ _
+    _ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
+    _ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
+    _ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
+    _ _ _ M _ _ _ M _ _ _ _ M _ _ _ M _ _ _
+    _ _ _ I I _ _ I I _ _ I I _ _ I I _ _ _
   </Bricks>
 </Level>
