@@ -73,12 +73,7 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
 
         // Bottom wall
         if (segmentSegmentCollisionStatic(ballPosition, ballTravelPath, bottomLeftCorner, bottomRightCorner - bottomLeftCorner, t)) {
-            // return LevelState::LOST;
-            if (t < minimalT) {
-                minimalT                    = t;
-                reflectedDirectionOfClosest = {ballDirection.x, -ballDirection.y};
-                collisionData.type          = CollisionType::WALL;
-            }
+            return LevelState::LOST;
         }
 
         // Top wall
