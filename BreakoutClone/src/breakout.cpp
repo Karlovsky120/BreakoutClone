@@ -107,10 +107,10 @@ void Breakout::doGame(const uint32_t& frameTime) {
                                 break;
                             }
                             case CollisionType::BRICK: {
-                                Instance& brick = bricks[collisionData.hitBrickIndex];
+                                Instance&        brick     = bricks[collisionData.hitBrickIndex];
+                                const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
                                 if (brick.maxHealth < UINT32_MAX) {
                                     --brick.health;
-                                    const BrickType& brickType = m_currentLevel->getBrickData(brick.id);
                                     if (brick.health <= 0) {
                                         m_score += brickType.breakScore;
                                         m_currentLevel->setScore(m_score);
@@ -119,6 +119,8 @@ void Breakout::doGame(const uint32_t& frameTime) {
                                     } else {
                                         m_soundManager->playSound(brickType.hitSoundPath);
                                     }
+                                } else {
+                                    m_soundManager->playSound(brickType.hitSoundPath);
                                 }
                                 break;
                             }
