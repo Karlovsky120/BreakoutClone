@@ -27,7 +27,7 @@ Renderer::Renderer() {
 
     m_swapchain           = std::make_unique<Swapchain>(m_window, m_surface, m_physicalDevice, m_device, m_queueFamilyIndex);
     m_surfaceExtent       = m_swapchain->getSurfaceExtent();
-    m_swapchainImageCount = m_swapchain->getImageCounts();
+    m_swapchainImageCount = m_swapchain->getImageCount();
 
     m_depthImage =
         createImage(m_surfaceExtent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT, "Depth image");
