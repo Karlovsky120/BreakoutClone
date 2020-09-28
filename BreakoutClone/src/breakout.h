@@ -7,7 +7,7 @@
 #include <memory>
 
 // In frames per second
-#define TARGET_FRAMERATE 120
+#define TARGET_FRAMERATE 144
 
 #define START_LIFE_COUNT 5
 

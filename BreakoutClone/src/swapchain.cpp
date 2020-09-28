@@ -1,11 +1,8 @@
 #include "swapchain.h"
 
 Swapchain::Swapchain(SDL_Window* window, const VkSurfaceKHR& surface, const VkPhysicalDevice& physicalDevice, const VkDevice& device,
-                     const uint32_t& queueFamilyIndex)
-    : m_window(window), m_surface(surface), m_physicalDevice(physicalDevice), m_device(device) {
-
-    m_surfaceFormat.format     = VK_FORMAT_B8G8R8A8_UNORM;
-    m_surfaceFormat.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+                     const uint32_t& queueFamilyIndex, const VkSurfaceFormatKHR& surfaceFormat)
+    : m_window(window), m_surface(surface), m_physicalDevice(physicalDevice), m_device(device), m_surfaceFormat(surfaceFormat) {
 
     if (!surfaceFormatSupported()) {
         throw std::runtime_error("Requested surface format not supported!");

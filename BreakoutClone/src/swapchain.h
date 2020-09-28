@@ -6,8 +6,8 @@ struct SDL_Window;
 
 class Swapchain {
   public:
-    Swapchain(SDL_Window* window, const VkSurfaceKHR& surface, const VkPhysicalDevice& physicalDevice, const VkDevice& device,
-              const uint32_t& queueFamilyIndex);
+    Swapchain(SDL_Window* window, const VkSurfaceKHR& surface, const VkPhysicalDevice& physicalDevice, const VkDevice& device, const uint32_t& queueFamilyIndex,
+              const VkSurfaceFormatKHR& surfaceFormat);
 
     ~Swapchain();
 
@@ -25,8 +25,8 @@ class Swapchain {
     const VkSurfaceKHR&     m_surface;
     VkSwapchainKHR          m_swapchain;
 
-    VkSurfaceFormatKHR m_surfaceFormat;
-    VkExtent2D         m_surfaceExtent;
+    const VkSurfaceFormatKHR m_surfaceFormat;
+    VkExtent2D               m_surfaceExtent;
 
     uint32_t m_swapchainImageCount;
 

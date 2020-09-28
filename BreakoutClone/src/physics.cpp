@@ -109,15 +109,15 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
             if (t < minimalT) {
                 minimalT           = t;
                 collisionData.type = CollisionType::PAD;
-                /*if (ballDirection.y == -latestReflectedDirection.y) {
+                if (ballDirection.y == -latestReflectedDirection.y) {
                     float collisionPoint        = (ballPosition + ballTravelPath * (ballRadius + t)).x;
                     float padLeftCorner         = padPosition.x - 0.5f * padScale.x + ballRadius;
                     float hitScale              = (collisionPoint - padLeftCorner) / (padScale.x - 2.0f * ballRadius);
                     hitScale                    = hitScale * 2.0f - 1.0f;
                     reflectedDirectionOfClosest = glm::normalize(glm::vec2(hitScale * 1.0f, -1.0f));
-                } else {*/
-                reflectedDirectionOfClosest = latestReflectedDirection;
-                //}
+                } else {
+                    reflectedDirectionOfClosest = latestReflectedDirection;
+                }
             }
         }
 
