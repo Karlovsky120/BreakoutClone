@@ -166,8 +166,8 @@ void Renderer::recordRenderCommandBuffers(const VkBuffer& instanceBuffer, const 
 }
 
 void Renderer::updateTextureArray(const std::vector<std::unique_ptr<Image>>& textures) {
-    VkDescriptorImageInfo descriptorImageInfo;
-    descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    VkDescriptorImageInfo descriptorImageInfo = {};
+    descriptorImageInfo.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     std::vector<VkDescriptorImageInfo> descriptorImageInfos;
     size_t                             i = 0;
