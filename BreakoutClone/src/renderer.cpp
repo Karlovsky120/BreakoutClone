@@ -7,7 +7,9 @@
 Renderer::Renderer() {
     initSDL();
 
-    VK_CHECK(volkInitialize());
+    if (volkInitialize() != VK_SUCCESS) {
+        throw std::runtime_error("Vulkan is required to run this program, please update your GPU driver!");
+    }
     createInstance();
 
 #ifdef VALIDATION_ENABLED
