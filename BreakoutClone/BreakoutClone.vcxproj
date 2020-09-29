@@ -141,7 +141,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\sdl_mixer\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\stb;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\vulkan\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\sdl_mixer\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\stb;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -157,7 +157,7 @@
 COPY "$(SolutionDir)external\sdl\lib\x64\SDL2_mixer.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o resources/shaders/%(Filename).spv</Command>
+      <Command>$(SolutionDir)external\vulkan\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o resources/shaders/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>
@@ -176,7 +176,7 @@ COPY "$(SolutionDir)external\sdl\lib\x64\SDL2_mixer.dll" "$(ProjectDir)bin\$(Pla
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\sdl_mixer\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\stb;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\vulkan\Include;$(SolutionDir)external\sdl\include;$(SolutionDir)external\sdl_mixer\include;$(SolutionDir)external\glm;$(SolutionDir)external\tinyxml2;$(SolutionDir)external\stb;$(SolutionDir)external\volk;$(ProjectDir)src\shaders\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -194,7 +194,7 @@ COPY "$(SolutionDir)external\sdl\lib\x64\SDL2_mixer.dll" "$(ProjectDir)bin\$(Pla
 COPY "$(SolutionDir)external\sdl\lib\x64\SDL2_mixer.dll" "$(ProjectDir)bin\$(Platform)\$(Configuration)\"</Command>
     </PostBuildEvent>
     <CustomBuild>
-      <Command>"$(VULKAN_SDK)\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o resources/shaders/%(Filename).spv</Command>
+      <Command>$(SolutionDir)external\vulkan\Bin\glslangValidator" "%(FullPath)" -V --target-env vulkan1.0 -o resources/shaders/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>Vulkan shadere compilation</Message>
