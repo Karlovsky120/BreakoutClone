@@ -50,7 +50,6 @@ LevelState Physics::resolveFrame(const uint32_t& frameTime /*microseconds*/, Lev
     }
 
     float remainingTravelDistance = ballSpeed * frameTime;
-    float travelTime              = 0;
     while (remainingTravelDistance > 0.0f) {
         CollisionData collisionData;
         float         minimalT                    = 2.0f;

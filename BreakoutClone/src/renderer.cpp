@@ -197,7 +197,7 @@ void Renderer::updateTextureArray(const std::vector<std::unique_ptr<Image>>& tex
 const Buffer* const Renderer::getUniformBuffer() const { return m_uniformBuffer.get(); }
 
 std::unique_ptr<Image> Renderer::createImage(const VkExtent2D& imageSize, const VkImageUsageFlags& imageUsageFlags, const VkFormat& imageFormat,
-                                             const VkImageAspectFlags& aspectMask, const char* name) {
+                                             const VkImageAspectFlags& aspectMask, [[maybe_unused]] const char* name) {
     const VkImage image = createVkImage(imageSize, imageUsageFlags, imageFormat);
 
 #ifdef VALIDATION_ENABLED
@@ -221,8 +221,9 @@ std::unique_ptr<Image> Renderer::createImage(const VkExtent2D& imageSize, const 
 }
 
 std::unique_ptr<Buffer> Renderer::createBuffer(const VkDeviceSize& bufferSize, const VkBufferUsageFlags& bufferUsageFlags,
-                                               const VkMemoryPropertyFlags& memoryPropertyFlags, const char* name) {
+                                               const VkMemoryPropertyFlags& memoryPropertyFlags, [[maybe_unused]] const char* name) {
     const VkBuffer buffer = createVkBuffer(bufferSize, bufferUsageFlags);
+
 #ifdef VALIDATION_ENABLED
     nameObject(buffer, VK_OBJECT_TYPE_BUFFER, name);
 #endif

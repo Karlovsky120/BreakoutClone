@@ -55,15 +55,12 @@ void Breakout::gameLoop() {
         m_renderer->acquireImage();
         m_renderer->renderAndPresentImage();
 
-        int32_t  remainingFrameTime = m_operatingFrametime - frameTime;
-        uint32_t elapsedFrametime   = frameTime;
-
         m_stateTimeCounter += m_operatingFrametime;
         m_timeCounter += m_operatingFrametime;
         ++m_frameCount;
 
-        if (m_operatingFrametime > elapsedFrametime) {
-            std::this_thread::sleep_for(std::chrono::microseconds(m_operatingFrametime - elapsedFrametime));
+        if (m_operatingFrametime > frameTime) {
+            std::this_thread::sleep_for(std::chrono::microseconds(m_operatingFrametime - frameTime));
         }
         m_collisionInfo.clear();
     }
