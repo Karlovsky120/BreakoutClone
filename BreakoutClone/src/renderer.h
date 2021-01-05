@@ -289,16 +289,6 @@ class Renderer {
 #endif
 
     /// <summary>
-    /// Buffer with vertex data for a rectangle.
-    /// </summary>
-    std::unique_ptr<Buffer> m_vertexBuffer;
-
-    /// <summary>
-    /// Buffer with index data for a rectangle.
-    /// </summary>
-    std::unique_ptr<Buffer> m_indexBuffer;
-
-    /// <summary>
     /// Staging buffer used for transfering data from the CPU to GPU local, CPU invisible buffers.
     /// </summary>
     std::unique_ptr<Buffer> m_stagingBuffer;
@@ -587,11 +577,6 @@ class Renderer {
     /// <param name="memoryPropertyFlags">Additional requested memory properties.</param>
     /// <returns>Handle to allocated device memory.</returns>
     const VkDeviceMemory allocateVulkanObjectMemory(const VkMemoryRequirements& memoryRequirements, const VkMemoryPropertyFlags& memoryPropertyFlags);
-
-    /// <summary>
-    /// Creates a vertex and index buffer for drawing a unit square centered at the origin.
-    /// </summary>
-    void createVertexAndIndexBuffers();
 
 #ifdef VALIDATION_ENABLED
     static VkBool32 VKAPI_CALL debugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
